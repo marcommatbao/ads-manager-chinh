@@ -1,0 +1,99 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+# Sectigo intermediate CA — public certificate, not a secret, needed at
+# runtime to complete Odoo's TLS chain (see lib/odoo-client.ts).
+!certs/sectigo-rsa-dv.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# runtime data (except seed files for Docker build)
+# team-members.json deliberately NOT force-included here anymore — it holds
+# real password hashes for live accounts and was committed to git history
+# unencrypted. 2026-07-23 it was removed from TRACKING only (git rm --cached,
+# commit dacd8ae) — HISTORY WAS NOT REWRITTEN: commits 5a154dc..68e90cc still
+# contain the hashes (audit 30/09). Every account listed there must be rotated
+# and history rewritten (git filter-repo) before the repo is shared further.
+# Production reads it from the persistent
+# /app/data volume at runtime, not from the git-tracked image layer, so
+# this doesn't affect a normal deploy — only the from-scratch bootstrap
+# fallback in lib/team.ts's readMembers() catch path, which was already
+# the documented behavior for a fresh/empty data volume.
+# data/tenants.json BỎ TRACK 17/09/2026: tệp seed này chứa GA4 property ID,
+# stream ID, measurement ID và Facebook Pixel ID của cả 3 công ty — đúng những
+# giá trị vừa được đưa ra biến môi trường ở lib/meta-accounts.ts. Để nó trong
+# repo công khai thì việc chuyển ra env không còn tác dụng gì.
+# readTenants() tự dựng lại từ COMPANY_CONFIG (đã đọc env) khi tệp không có.
+/data/*
+!/data/.gitkeep
+
+# log files & debug outputs
+*.log
+*.out
+*.txt
+curl_output.txt
+page_error.html
+gemini_raw.*
+geo_meta.json
+improve_*.log
+models.log
+length.log
+plength.log
+tsc-errors.log
+
+# temp directories and scripts
+/tmp/
+# Mẫu `test_*.ts` KHÔNG bắt `.mts`/`.mjs` (17/09/2026: hai script tạm truy vấn
+# Odoo production tên test_q-*.mts đã lọt qua, nằm untracked nhưng KHÔNG được
+# ignore — chỉ thiếu một `git add -A` là vào repo). Dùng `.*[jt]s` cho đủ.
+test_*.[cm]js
+test_*.[cm]ts
+test_*.js
+test_*.ts
+test-*.[cm]ts
+test-*.ts
+test_*.json
+
+# internal/backup files
+BACKUP_REDISTRIBUTION.md
+restore-redistribution.ps1
+
+# Dữ liệu thật chụp từ tài khoản quảng cáo cho test đối chiếu — KHÔNG commit (số kinh doanh)
+/tests/fixtures/local/

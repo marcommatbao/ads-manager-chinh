@@ -1,0 +1,12 @@
+node_modules
+.next
+*.log
+.git
+# Audit 30/09: không đưa khoá / dữ liệu thật vào build context. `next build` (standalone) chép .env và data/*.json
+# vào .next/standalone → bị nướng vào lớp ảnh runner khi build từ thư mục làm việc (docker compose).
+.env
+.env.*
+!.env.example
+data/*
+!data/.gitkeep
+tests/fixtures/local

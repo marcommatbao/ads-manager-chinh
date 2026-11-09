@@ -1,0 +1,37 @@
+{
+  "_comment": "Vercel Cron config is NOT what actually runs in production — this app deploys via Docker (see docker-entrypoint.sh), which wires its own crond schedule (currently /api/cron every 6h, leads-notify + orders-notify every 5min, kpi-report daily, alerts/digest daily). This file is kept only as documentation of intended cron routes for a hypothetical Vercel deploy. Previously listed several paths with no matching route.ts at all (budget-check, cpl-monitor, anomaly, auto-apply, alerts/digest, cron/audience-compare, cron/cleanup-drafts) — removed at the time; alerts/digest was added back once it got a real implementation.",
+  "crons": [
+    {
+      "path": "/api/automation/google/monitor",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/automation/google/budget-optimizer",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/google/toolkit/quality-score?company=MBC",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/google/toolkit/quality-score?company=MBI",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/reports/weekly/send",
+      "schedule": "30 6 * * 1"
+    },
+    {
+      "path": "/api/cron/leads-notify",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/kpi-report",
+      "schedule": "55 16 * * *"
+    },
+    {
+      "path": "/api/alerts/digest",
+      "schedule": "0 1 * * *"
+    }
+  ]
+}
