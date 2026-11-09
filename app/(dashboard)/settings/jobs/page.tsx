@@ -218,7 +218,7 @@ function TeamsWebhooksPanel() {
       const json = await res.json() as { ok?: boolean; message?: string };
       if (json.ok) { showToast(json.message ?? t("creative.settingsJobs.tw.saved")); cancelEdit(key); await loadWebhooks(); }
       else showToast(json.message ?? t("creative.settingsJobs.tw.saveErr"), false);
-    } catch { showToast("Network error", false); }
+    } catch { showToast(t("creative.settingsJobs.networkError"), false); }
     setSaving(s => ({ ...s, [key]: false }));
   };
 
@@ -423,7 +423,7 @@ function JobRow({
 
           {/* Job ĐÁNG LẼ phải chạy mà không chạy. Thêm 17/09/2026: hai cron
               thông báo lead/đơn hàng chết 16 tiếng, màn hình này lúc đó không
-              có gì nói ra điều đó — "Next expected" bị tính sai thành +24h cho
+              có gì nói ra điều đó — "{t("creative.settingsJobs.nextExpected")}" bị tính sai thành +24h cho
               job 5 phút/lần nên không bao giờ trông như trễ. */}
           {state.isStale && (
             <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-300 p-3">
@@ -450,20 +450,20 @@ function JobRow({
           )}
 
           {meta.riskNote && meta.riskLevel === "high" && (
-            <p className="text-xs text-red-600"><span className="font-semibold">Risk: </span>{meta.riskNote}</p>
+            <p className="text-xs text-red-600"><span className="font-semibold">{t("creative.settingsJobs.risk")}</span>{meta.riskNote}</p>
           )}
 
           <div className="grid grid-cols-3 gap-3 text-xs">
             <div>
-              <p className="text-slate-500 font-medium">Last success</p>
+              <p className="text-slate-500 font-medium">{t("creative.settingsJobs.lastSuccess")}</p>
               <p className="text-emerald-700 mt-0.5">{absTime(state.lastSuccess?.startedAt ?? null, loc)}</p>
             </div>
             <div>
-              <p className="text-slate-500 font-medium">Last failure</p>
+              <p className="text-slate-500 font-medium">{t("creative.settingsJobs.lastFailure")}</p>
               <p className="text-red-600 mt-0.5">{absTime(state.lastFailure?.startedAt ?? null, loc)}</p>
             </div>
             <div>
-              <p className="text-slate-500 font-medium">Next expected</p>
+              <p className="text-slate-500 font-medium">{t("creative.settingsJobs.nextExpected")}</p>
               <p className="text-slate-700 mt-0.5">{absTime(state.nextExpectedAt, loc)}</p>
             </div>
           </div>
@@ -471,7 +471,7 @@ function JobRow({
           {/* Recent history */}
           {state.recentHistory.length > 0 && (
             <div className="space-y-1">
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Recent runs</p>
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{t("creative.settingsJobs.recentRuns")}</p>
               {state.recentHistory.map(r => (
                 <div key={r.runId} className="flex items-center gap-2 text-xs">
                   <span className={cn("shrink-0", RUN_STATUS[r.status].cls)}>{RUN_STATUS[r.status].icon}</span>
@@ -546,7 +546,7 @@ export default function JobsPage() {
       });
       if (res.ok) { showToast(t("creative.settingsJobs.toast.paused", { id: jobId })); await load(); }
       else showToast(t("creative.settingsJobs.toast.pauseErr"), false);
-    } catch { showToast("Network error", false); }
+    } catch { showToast(t("creative.settingsJobs.networkError"), false); }
     setActing(a => ({ ...a, [jobId]: false }));
   };
 
@@ -559,7 +559,7 @@ export default function JobsPage() {
       });
       if (res.ok) { showToast(t("creative.settingsJobs.toast.resumed", { id: jobId }), true); await load(); }
       else showToast(t("creative.settingsJobs.toast.resumeErr"), false);
-    } catch { showToast("Network error", false); }
+    } catch { showToast(t("creative.settingsJobs.networkError"), false); }
     setActing(a => ({ ...a, [jobId]: false }));
   };
 
@@ -568,9 +568,9 @@ export default function JobsPage() {
     try {
       const res = await fetch(`/api/jobs/${jobId}/trigger`, { method: "POST" });
       const json = await res.json() as { success?: boolean; error?: string };
-      if (json.success) { showToast(`Job triggered: ${jobId}`); setTimeout(load, 2000); }
-      else showToast(json.error ?? "Trigger failed", false);
-    } catch { showToast("Network error", false); }
+      if (json.success) { showToast(t("creative.settingsJobs.triggered", { id: jobId })); setTimeout(load, 2000); }
+      else showToast(json.error ?? t("creative.settingsJobs.triggerFailed"), false);
+    } catch { showToast(t("creative.settingsJobs.networkError"), false); }
     setTriggering(t => ({ ...t, [jobId]: false }));
   };
 
@@ -594,7 +594,7 @@ export default function JobsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-slate-800">Cron Jobs &amp; Background Tasks</p>
+          <p className="text-sm font-semibold text-slate-800">Công việc định kỳ &amp; tác vụ nền</p>
           <div className="flex items-center gap-4 mt-1 text-xs">
             <span className="text-slate-500">{data.states.length} jobs</span>
             {pausedCount > 0 && <span className="text-amber-700 font-medium">{pausedCount} paused</span>}
@@ -606,7 +606,7 @@ export default function JobsPage() {
         <div className="flex items-center gap-2">
           {loadError ? <span className="text-[11px] text-red-600">{loadError}</span> : loadedAt && <span className="text-[11px] text-slate-400">{t("creative.settingsJobs.updatedAt", { time: loadedAt })}</span>}
           <Button variant="outline" size="sm" onClick={load} disabled={refreshing} className="gap-1.5 text-xs border-slate-200">
-            <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} /> {refreshing ? t("creative.settingsJobs.loadingEllipsis") : "Refresh"}
+            <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} /> {refreshing ? t("creative.settingsJobs.loadingEllipsis") : t("creative.settingsJobs.refresh")}
           </Button>
         </div>
       </div>
