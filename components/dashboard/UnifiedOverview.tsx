@@ -58,6 +58,42 @@ function formatRoas(v: number | null): string {
   return v === null ? "—" : `${v.toFixed(1)}x`;
 }
 
+/** Phân loại lỗi nguồn Odoo để báo đúng nguyên nhân + việc cần làm (không bao giờ hiện 0 thay cho "chưa biết"). */
+export type SourceErrorKind = "blocked" | "config" | "timeout" | "other";
+export function classifySourceError(error: string): SourceErrorKind {
+  if (/\b(401|403)\b|forbidden|unauthori[sz]ed/i.test(error)) return "blocked";
+  if (/chưa cấu hình|not configured|MATBAO_REPORT_API/i.test(error)) return "config";
+  if (/timeout|timed out|aborted|ETIMEDOUT/i.test(error)) return "timeout";
+  return "other";
+}
+
+function SourceError({ error, onRetry, t }: { error: string; onRetry: () => void; t: ReturnType<typeof useT> }) {
+  const kind = classifySourceError(error);
+  return (
+    <div role="status" className="mt-2 space-y-2">
+      <p className="text-sm font-medium text-slate-400">{t("overview.unified.source.noData")}</p>
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+        <p className="text-xs font-semibold text-amber-900">{t(`overview.unified.source.${kind}.title`)}</p>
+        <p className="mt-1 text-xs leading-snug text-amber-800">{t(`overview.unified.source.${kind}.hint`)}</p>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={onRetry}
+            className="rounded-md bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-900 hover:bg-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          >
+            {t("overview.unified.retry")}
+          </button>
+          <details className="text-right text-[11px] text-amber-700">
+            <summary className="cursor-pointer select-none">{t("overview.unified.source.detail")}</summary>
+            <p className="mt-1 break-all text-left font-mono">{error}</p>
+          </details>
+        </div>
+      </div>
+      <p className="text-[11px] text-slate-400">{t("overview.unified.source.from")}</p>
+    </div>
+  );
+}
+
 // ── Main Component ──
 export default function UnifiedOverview() {
   const t = useT();
@@ -210,12 +246,7 @@ export default function UnifiedOverview() {
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <p className="text-sm font-medium text-gray-500">{t("overview.unified.mbiOrders.title")}</p>
           {mbiOrders.error ? (
-            <>
-              <p className="mt-1 text-2xl font-bold text-gray-300">—</p>
-              <p className="mt-3 text-[11px] leading-snug text-amber-700">
-                {t("overview.unified.mbiOrders.error", { error: mbiOrders.error })}
-              </p>
-            </>
+            <SourceError error={mbiOrders.error} onRetry={fetchData} t={t} />
           ) : (
             <>
               <p className="mt-1 text-2xl font-bold text-gray-900">
@@ -234,12 +265,7 @@ export default function UnifiedOverview() {
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <p className="text-sm font-medium text-gray-500">{t("overview.unified.mbcRevenue.title")}</p>
           {mbcRevenue.error ? (
-            <>
-              <p className="mt-1 text-2xl font-bold text-gray-300">—</p>
-              <p className="mt-3 text-[11px] leading-snug text-amber-700">
-                {t("overview.unified.mbcRevenue.error", { error: mbcRevenue.error })}
-              </p>
-            </>
+            <SourceError error={mbcRevenue.error} onRetry={fetchData} t={t} />
           ) : (
             <>
               <p className="mt-1 text-2xl font-bold text-gray-900">

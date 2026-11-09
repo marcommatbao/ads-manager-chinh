@@ -1378,6 +1378,18 @@ export const overview = {
   "overview.unified.mbcRevenue.error": "Không lấy được doanh thu thật: {error}",
   "overview.unified.mbcRevenue.noteRoas": "Doanh thu thật từ Odoo — cùng nguồn với card “Hiệu quả chi phí theo công ty” bên dưới, không phải số Meta/Google tự khai.",
   "overview.unified.mbcRevenue.noteNoRoas": "Doanh thu thật từ Odoo. Chọn bộ lọc “MBC” ở trên để xem thêm ROAS (chi phí theo phạm vi đang chọn không khớp doanh thu MBC).",
+  // Trạng thái nguồn Odoo khi không đọc được (09/11/2026) — [ĐỀ XUẤT — chờ BA duyệt câu chữ]
+  "overview.unified.source.noData": "Chưa có số",
+  "overview.unified.source.blocked.title": "Odoo đang từ chối truy cập",
+  "overview.unified.source.blocked.hint": "Máy chủ báo cáo chưa cho phép địa chỉ của AdsCommand. Nhờ quản trị Report API mở quyền (whitelist IP của Vibe Host), rồi bấm Thử lại.",
+  "overview.unified.source.config.title": "Chưa cấu hình nguồn báo cáo",
+  "overview.unified.source.config.hint": "Thiếu địa chỉ Report API. Vào Cài đặt để khai báo, rồi bấm Thử lại.",
+  "overview.unified.source.timeout.title": "Odoo phản hồi quá chậm",
+  "overview.unified.source.timeout.hint": "Máy chủ báo cáo không trả lời kịp. Thường tự hết sau ít phút — bấm Thử lại.",
+  "overview.unified.source.other.title": "Không đọc được số từ Odoo",
+  "overview.unified.source.other.hint": "Bấm Thử lại. Nếu vẫn lỗi, gửi chi tiết bên dưới cho người quản trị.",
+  "overview.unified.source.detail": "Chi tiết kỹ thuật",
+  "overview.unified.source.from": "Nguồn: Odoo Report API",
   // company-comparison
   "overview.compare.row.totalSpend": "Tổng chi tiêu",
   "overview.compare.row.avgCpl": "CPL trung bình",
