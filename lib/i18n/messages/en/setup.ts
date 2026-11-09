@@ -31,7 +31,7 @@ export const setup: Translation<typeof vi> = {
 
   "setup.status.healthy": "Connected",
   "setup.status.warning": "Warning",
-  "setup.status.missing_config": "No key pasted",
+  "setup.status.missing_config": "Not connected",
   "setup.status.auth_error": "Invalid key",
   "setup.status.service_error": "Service error",
   "setup.status.disabled": "Off",

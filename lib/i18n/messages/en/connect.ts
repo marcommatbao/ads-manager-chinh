@@ -5,7 +5,7 @@ export const connect: Translation<typeof vi> = {
   "connect.reason.cancelled": "You cancelled the connection.",
   "connect.reason.access_denied": "{provider}: access was not granted.",
   "connect.reason.scope_denied.google": "You didn't tick the Google Ads permission on the Google screen — click Connect again and tick the box to manage Google Ads.",
-  "connect.reason.scope_denied.meta": "You didn't grant ad management permissions in the Facebook dialog — click Connect again and keep all the requested permissions.",
+  "connect.reason.scope_denied.meta": "Facebook did not grant ad management permission to this connection (even if you clicked Confirm). Check that your Facebook account has full control of the selected ad account and Page, then connect again. If it still fails, ask your admin to check the Meta app configuration.",
   "connect.reason.no_refresh_token": "Google didn't return long-term access — click Connect again.",
   "connect.reason.session_mismatch": "The connection session doesn't match this browser — click Connect again in the same browser.",
   "connect.reason.install_inactive": "This installation is temporarily suspended by Mắt Bão — please contact Mắt Bão.",

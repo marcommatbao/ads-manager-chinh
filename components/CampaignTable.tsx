@@ -87,6 +87,9 @@ interface CampaignTableProps {
   platformFilter?: Platform | "all";
   /** Lý do cột "Người dùng duy nhất" trống, lấy từ /api/google/campaigns. */
   uniqueUsersError?: string | null;
+  /** Đồng bộ lỗi → danh sách trống KHÔNG có nghĩa là không có chiến dịch. */
+  syncFailed?: boolean;
+  onRetry?: () => void;
 }
 
 // ─────────────────────────────────────────────
@@ -515,7 +518,7 @@ const PLATFORM_PILLS: { label: string; value: Platform | "all" }[] = [
 // ─────────────────────────────────────────────
 // Main Component
 // ─────────────────────────────────────────────
-export default function CampaignTable({ campaigns, isLoading = false, currency = "USD", showGA4 = false, platformFilter = "all", uniqueUsersError = null }: CampaignTableProps) {
+export default function CampaignTable({ campaigns, isLoading = false, currency = "USD", showGA4 = false, platformFilter = "all", uniqueUsersError = null, syncFailed = false, onRetry }: CampaignTableProps) {
   const router = useRouter();
   const { updateCampaignStatus, updateCampaignBudget } = useAdsStore();
   const { toast } = useToast();
@@ -968,12 +971,23 @@ export default function CampaignTable({ campaigns, isLoading = false, currency =
                       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100">
                         <Inbox className="h-6 w-6 text-slate-400" />
                       </div>
-                      <p className="text-sm font-medium text-slate-600">{t("campaigns.empty.title")}</p>
-                      <p className="mt-1 text-xs text-slate-400">
-                        {search || platform !== "all"
-                          ? t("campaigns.empty.adjustFilters")
-                          : t("campaigns.empty.connectAccounts")}
+                      <p className="text-sm font-medium text-slate-600">{t(syncFailed ? "campaigns.empty.errorTitle" : "campaigns.empty.title")}</p>
+                      <p className="mt-1 max-w-md text-xs text-slate-500">
+                        {syncFailed
+                          ? t("campaigns.empty.errorBody")
+                          : search || platform !== "all"
+                            ? t("campaigns.empty.adjustFilters")
+                            : t("campaigns.empty.connectAccounts")}
                       </p>
+                      {syncFailed && onRetry && (
+                        <button
+                          type="button"
+                          onClick={onRetry}
+                          className="mt-3 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                        >
+                          {t("campaigns.empty.retry")}
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

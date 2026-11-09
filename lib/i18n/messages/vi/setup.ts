@@ -34,7 +34,7 @@ export const setup = {
   // Nhãn trạng thái khoá (cũng dùng ở bước 3)
   "setup.status.healthy": "Đã kết nối",
   "setup.status.warning": "Cảnh báo",
-  "setup.status.missing_config": "Chưa dán khoá",
+  "setup.status.missing_config": "Chưa kết nối",
   "setup.status.auth_error": "Sai khoá",
   "setup.status.service_error": "Lỗi dịch vụ",
   "setup.status.disabled": "Tắt",

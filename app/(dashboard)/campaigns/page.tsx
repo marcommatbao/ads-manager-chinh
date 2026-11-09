@@ -739,7 +739,7 @@ export default function CampaignsPage() {
 
       {/* Table (Desktop) */}
       <div className="hidden md:block">
-        <CampaignTable campaigns={filteredCampaigns} isLoading={isLoading} currency={currency} showGA4={showGA4} platformFilter={selectedPlatform} uniqueUsersError={uniqueUsersError} />
+        <CampaignTable campaigns={filteredCampaigns} isLoading={isLoading} currency={currency} showGA4={showGA4} platformFilter={selectedPlatform} uniqueUsersError={uniqueUsersError} syncFailed={!!syncError} onRetry={() => fetchCampaigns(true)} />
       </div>
 
       {/* Cards (Mobile) */}
@@ -755,7 +755,15 @@ export default function CampaignsPage() {
         ))}
         {filteredCampaigns.length === 0 && !isLoading && (
           <div className="p-8 text-center text-slate-500 bg-white rounded-xl border border-slate-200">
-            {t("campaigns.page.noCampaigns")}
+            {syncError ? (
+              <>
+                <p className="font-medium text-slate-700">{t("campaigns.empty.errorTitle")}</p>
+                <p className="mt-1 text-xs">{t("campaigns.empty.errorBody")}</p>
+                <button type="button" onClick={() => fetchCampaigns(true)} className="mt-3 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700">
+                  {t("campaigns.empty.retry")}
+                </button>
+              </>
+            ) : t("campaigns.page.noCampaigns")}
           </div>
         )}
       </div>

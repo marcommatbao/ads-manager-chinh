@@ -5,7 +5,7 @@ export const connect = {
   "connect.reason.cancelled": "Bạn đã huỷ kết nối.",
   "connect.reason.access_denied": "{provider}: bạn chưa cho phép truy cập.",
   "connect.reason.scope_denied.google": "Bạn chưa tích quyền Google Ads trên màn hình Google — bấm kết nối lại và tích ô quản lý Google Ads.",
-  "connect.reason.scope_denied.meta": "Bạn chưa cấp quyền quản lý quảng cáo trên hộp thoại Facebook — bấm kết nối lại và giữ nguyên các quyền được đề nghị.",
+  "connect.reason.scope_denied.meta": "Facebook chưa cấp quyền quản lý quảng cáo cho kết nối này (kể cả khi bạn đã bấm Xác nhận). Kiểm tra: tài khoản Facebook của bạn có toàn quyền trên tài khoản quảng cáo và Trang đã chọn, rồi kết nối lại. Nếu vẫn lỗi, báo quản trị viên kiểm tra cấu hình ứng dụng Meta.",
   "connect.reason.no_refresh_token": "Google không trả quyền truy cập lâu dài — bấm kết nối lại.",
   "connect.reason.session_mismatch": "Phiên kết nối không khớp trình duyệt — bấm kết nối lại trên cùng trình duyệt.",
   "connect.reason.install_inactive": "Bản cài đang bị Mắt Bão tạm ngưng — liên hệ Mắt Bão.",

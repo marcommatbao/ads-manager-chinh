@@ -7,7 +7,7 @@
 // ============================================================
 
 import { useState, useEffect, useCallback } from "react";
-import { Loader2, RefreshCw, CheckCircle2, AlertCircle, XCircle, AlertTriangle, Ban, ExternalLink } from "lucide-react";
+import { Loader2, RefreshCw, CheckCircle2, AlertCircle, XCircle, AlertTriangle, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ConnectorHealthRecord, ConnectorStatus } from "@/lib/connectors/types";
@@ -92,7 +92,7 @@ function ConnectorRow({
   const t = useT();
   const status = record?.status ?? "missing_config";
   const [expanded, setExpanded] = useState(false);
-  const hasDetails = record && (record.failureReason || Object.keys(record.maskedConfig).length > 0 || record.note);
+  const hasDetails = record && (record.failureReason || Object.keys(record.maskedConfig).length > 0 || record.note || (record.status !== "healthy" && record.status !== "disabled"));
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -147,6 +147,11 @@ function ConnectorRow({
           )}
           {record?.note && !record.failureReason && (
             <p className="text-xs text-slate-600">{record.note}</p>
+          )}
+          {record && record.status !== "healthy" && record.status !== "disabled" && (
+            <p className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700">
+              {t(`settings.health.next.${record.status}` as MessageKey)}
+            </p>
           )}
           {Object.entries(record?.maskedConfig ?? {}).length > 0 && (
             <div className="space-y-1">

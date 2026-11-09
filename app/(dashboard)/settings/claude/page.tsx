@@ -72,12 +72,33 @@ export default function ClaudeSettingsPage() {
         <p className="mt-1 text-sm text-slate-600">{t("settings.claude.intro")}</p>
       </div>
 
-      {err && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{err}</div>}
+      {err && (
+        <div role="alert" className="flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <span>{err}</span>
+          {!data && <Button variant="outline" size="sm" onClick={() => { setErr(null); void load() }}>{t("settings.claude.retry")}</Button>}
+        </div>
+      )}
+      {!data && !err && <p className="text-sm text-slate-500" aria-live="polite">{t("settings.claude.loading")}</p>}
+
+      {data && (
+        <div className={`rounded-xl border p-3 text-sm ${data.settings.writesEnabled ? "border-amber-200 bg-amber-50 text-amber-900" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
+          {data.settings.writesEnabled ? t("settings.claude.writesOnBanner") : t("settings.claude.writesOffBanner")}
+        </div>
+      )}
+
+      <section className="space-y-2 rounded-xl border border-blue-200 bg-blue-50/40 p-4">
+        <h3 className="font-medium text-slate-800">{t("settings.claude.web.title")}</h3>
+        <p className="text-sm text-slate-600">{t("settings.claude.web.body")}</p>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 overflow-x-auto whitespace-nowrap rounded border border-slate-200 bg-white px-2 py-1 text-xs">{endpoint}</code>
+          <Button variant="outline" onClick={() => copy(endpoint, "url")}>{copied === "url" ? t("settings.claude.copied") : t("settings.claude.web.copyUrl")}</Button>
+        </div>
+      </section>
 
       <section className="space-y-3 rounded-xl border border-slate-200 p-4">
         <h3 className="font-medium text-slate-800">{t("settings.claude.create")}</h3>
         <div className="flex flex-wrap items-end gap-3">
-          <Input className="max-w-xs" placeholder={t("settings.claude.name")} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
+          <Input className="max-w-xs" aria-label={t("settings.claude.name")} placeholder={t("settings.claude.name")} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
           <label className="text-sm text-slate-600">
             <span className="mr-2">{t("settings.claude.mode")}</span>
             <select className="rounded-md border border-slate-200 px-2 py-1.5" value={mode} onChange={(e) => setMode(e.target.value as "read" | "write")}>
@@ -87,6 +108,7 @@ export default function ClaudeSettingsPage() {
           </label>
           <Button disabled={busy || !data} onClick={create}>{busy ? t("settings.claude.creating") : t("settings.claude.create")}</Button>
         </div>
+        <p className="text-xs text-slate-600">{mode === "write" ? t("settings.claude.modeHelp.write") : t("settings.claude.modeHelp.read")}</p>
         {data && !data.canWrite && <p className="text-xs text-slate-500">{t("settings.claude.writeNotAllowed")}</p>}
 
         {secret && (
@@ -125,7 +147,7 @@ export default function ClaudeSettingsPage() {
                   <th className="py-1 pr-3">{t("settings.claude.colCreated")}</th>
                   <th className="py-1 pr-3">{t("settings.claude.colLastUsed")}</th>
                   <th className="py-1 pr-3">{t("settings.claude.colWrites")}</th>
-                  <th />
+                  <th><span className="sr-only">{t("settings.claude.revoke")}</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -139,7 +161,7 @@ export default function ClaudeSettingsPage() {
                     <td className="py-1.5 pr-3 text-slate-600">{k.writesToday}</td>
                     <td className="py-1.5 text-right">
                       {k.revokedAt ? <span className="text-xs text-slate-400">{t("settings.claude.revoked")}</span>
-                        : <Button variant="outline" className="text-red-600" onClick={() => revoke(k)}>{t("settings.claude.revoke")}</Button>}
+                        : <Button variant="outline" className="text-red-600" aria-label={`${t("settings.claude.revoke")}: ${k.name}`} onClick={() => revoke(k)}>{t("settings.claude.revoke")}</Button>}
                     </td>
                   </tr>
                 ))}
