@@ -1,16 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/SessionProvider";
 import { getCurrentUser } from "@/lib/auth";
 import { I18nProvider } from "@/lib/i18n/client";
 import { getLocale } from "@/lib/i18n/server";
-
-const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-});
 
 export const metadata: Metadata = {
   title: "AdsCommand — Ads Management Dashboard",
@@ -37,7 +30,7 @@ export default async function RootLayout({
   const locale = await getLocale();
 
   return (
-    <html lang={locale} className={inter.variable}>
+    <html lang={locale}>
       <body>
         <I18nProvider locale={locale}>
           <SessionProvider initialUser={initialUser}>

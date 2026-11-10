@@ -2,6 +2,14 @@ node_modules
 .next
 *.log
 .git
+.claude
+.vibe
+docs
+tests
+coverage
+playwright-report
+cypress
+
 # Audit 30/09: không đưa khoá / dữ liệu thật vào build context. `next build` (standalone) chép .env và data/*.json
 # vào .next/standalone → bị nướng vào lớp ảnh runner khi build từ thư mục làm việc (docker compose).
 .env
@@ -9,4 +17,14 @@ node_modules
 !.env.example
 data/*
 !data/.gitkeep
+
+# Local/editor/build artifacts
+*.tsbuildinfo
+.turbo
+.cache
+.DS_Store
+.vscode
+.idea
+
+# Test fixtures chứa dữ liệu mẫu, không dùng trong production build
 tests/fixtures/local
