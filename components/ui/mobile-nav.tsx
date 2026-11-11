@@ -124,8 +124,11 @@ export function MobileDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       />
 
       {/* Drawer */}
-      <div 
-        className="fixed inset-y-0 left-0 z-50 w-72 bg-white flex flex-col shadow-2xl lg:hidden animate-in slide-in-from-left duration-200"
+      <div
+        className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-white shadow-2xl lg:hidden animate-in slide-in-from-left duration-200"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("shell.mobileMenu")}
       >
         <div className="flex items-center justify-between h-[60px] px-5 border-b border-slate-100 shrink-0">
           <span className="text-[18px] font-bold text-slate-800 tracking-tight">
