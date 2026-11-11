@@ -67,6 +67,40 @@ export function registerReadTools(server: McpServer, ctx: McpContext): void {
     return { platform: a.platform, range: r, ...top(slim, a.limit ?? 50, (c) => c.spend) }
   }))
 
+  server.registerTool("get_channel_briefing", {
+    title: "Cross-channel performance briefing",
+    description: "Read-only executive summary for Meta and Google Ads over a date range: spend, results, CPL/ROAS, top campaigns and data-quality warnings. Never treats a failed source as zero. Use this first when the user asks for an overview or what needs attention.",
+    inputSchema: { company: company.optional().describe("Filter to one company; omit for all accessible companies"), ...dateArgs }, annotations: RO,
+  }, run(ctx, "get_channel_briefing", async (a: { company?: string; from?: string; to?: string }) => {
+    if (a.company) requireCo(ctx, a.company)
+    const r = range(a.from, a.to)
+    const [metaResult, googleResult] = await Promise.allSettled([
+      getMetaCampaignPerformance(ctx.user, { status: null, from: r.from, to: r.to }),
+      getGoogleCampaignPerformance(ctx.user, { company: a.company ?? null, from: r.from, to: r.to }),
+    ])
+    const source = (name: string, result: PromiseSettledResult<unknown>) => {
+      if (result.status === "rejected") return { name, ok: false, error: result.reason instanceof Error ? result.reason.message : String(result.reason) }
+      return { name, ok: true }
+    }
+    const metaRows = metaResult.status === "fulfilled"
+      ? metaResult.value.campaigns.filter((c) => !a.company || c.company === a.company)
+      : []
+    const googleRows = googleResult.status === "fulfilled" ? googleResult.value.campaigns : []
+    const summarize = (rows: typeof metaRows | typeof googleRows) => {
+      const spend = rows.reduce((n, c) => n + c.metrics.spend, 0)
+      const results = rows.reduce((n, c) => n + c.metrics.conversions, 0)
+      const revenue = rows.reduce((n, c) => n + c.metrics.revenue, 0)
+      return { campaigns: rows.length, spend: Math.round(spend), results, cpl: results > 0 ? Math.round(spend / results) : null, revenue: Math.round(revenue), roas: spend > 0 ? +(revenue / spend).toFixed(2) : null, topCampaigns: top(rows.map((c) => ({ id: c.id, name: c.name, company: c.company, spend: Math.round(c.metrics.spend), results: c.metrics.conversions, ctr: +c.metrics.ctr.toFixed(2) })), 5, (c) => c.spend) }
+    }
+    const warnings = [
+      ...(metaResult.status === "rejected" ? ["Meta Ads could not be read; Meta figures are not zero."] : []),
+      ...(googleResult.status === "rejected" ? ["Google Ads could not be read; Google figures are not zero."] : []),
+      ...(metaResult.status === "fulfilled" && metaRows.length === 0 ? ["Meta returned no campaigns for this range/filter."] : []),
+      ...(googleResult.status === "fulfilled" && googleRows.length === 0 ? ["Google returned no campaigns for this range/filter."] : []),
+    ]
+    return { range: r, company: a.company ?? "ALL", sources: [source("meta", metaResult), source("google", googleResult)], meta: summarize(metaRows), google: summarize(googleRows), warnings }
+  }))
+
   server.registerTool("get_campaigns_over_target", {
     title: "Campaigns vs target",
     description: "Each campaign with spend, orders/leads and its verdict against the company's cost-per-result target (red = over the ceiling). This is AdsCommand's 'Campaign actions' overview; use it to find what to fix first.",
