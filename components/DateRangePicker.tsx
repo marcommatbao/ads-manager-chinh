@@ -79,7 +79,7 @@ export function DateRangePicker({ className }: { className?: string }) {
             id="date"
             variant="outline"
             className={cn(
-              "justify-between text-left font-normal rounded-lg px-4 py-2 text-sm border-slate-200 bg-white min-w-[240px]",
+              "w-full justify-between text-left font-normal rounded-lg px-4 py-2 text-sm border-slate-200 bg-white sm:min-w-[240px]",
               !tempRange && "text-muted-foreground",
               "focus:ring-2 focus:ring-amber-100"
             )}
@@ -93,9 +93,9 @@ export function DateRangePicker({ className }: { className?: string }) {
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="end">
-          <div className="flex bg-white rounded-lg shadow-lg overflow-hidden border border-slate-200">
+          <div className="flex max-w-[calc(100vw-2rem)] flex-col overflow-auto bg-white rounded-lg shadow-lg border border-slate-200 sm:flex-row">
             {/* Presets Sidebar */}
-            <div className="flex flex-col gap-1 border-r border-slate-100 p-3 min-w-[150px] bg-slate-50/50">
+            <div className="flex shrink-0 flex-col gap-1 border-r border-slate-100 p-3 min-w-[150px] bg-slate-50/50">
               {PRESETS.map((preset) => (
                 <button
                   key={preset.labelKey}
@@ -116,7 +116,7 @@ export function DateRangePicker({ className }: { className?: string }) {
             </div>
 
             {/* Calendar */}
-            <div className="p-3">
+            <div className="min-w-0 overflow-auto p-3">
               <Calendar
                 initialFocus
                 mode="range"

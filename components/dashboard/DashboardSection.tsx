@@ -48,12 +48,12 @@ export function DashboardSection({
       {/* Section header */}
       <div
         className={cn(
-          "flex items-center justify-between pb-2 border-b border-slate-100",
+          "flex flex-col gap-2 border-b border-slate-100 pb-2 sm:flex-row sm:items-center sm:justify-between",
           collapsible && "cursor-pointer select-none",
         )}
         onClick={collapsible ? () => setCollapsed(c => !c) : undefined}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           {collapsible && (
             collapsed
               ? <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
@@ -73,7 +73,7 @@ export function DashboardSection({
         </div>
         {!collapsed && actions && (
           <div
-            className="flex items-center gap-1"
+            className="flex flex-wrap items-center gap-1"
             onClick={e => e.stopPropagation()}
           >
             {actions}

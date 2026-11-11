@@ -50,12 +50,14 @@ function useNotificationCount() {
 
 export function MobileTopbar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
   const { user } = useSession();
+  const t = useT();
   const unreadCount = useNotificationCount();
 
   return (
     <div className="flex lg:hidden h-[60px] items-center justify-between border-b bg-white px-4 shrink-0 shadow-sm sticky top-0 z-40">
       <div className="flex items-center gap-3">
         <button
+          aria-label={t("shell.openMenu")}
           onClick={onOpenDrawer}
           className="p-2 -ml-2 text-slate-600 hover:text-slate-900 focus:outline-none"
         >
@@ -68,7 +70,7 @@ export function MobileTopbar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
 
       <div className="flex items-center gap-3">
         <LanguageSwitch />
-        <Link href="/notifications" className="relative p-2 text-slate-600 hover:text-slate-900">
+        <Link href="/notifications" aria-label={t("shell.notifications")} className="relative p-2 text-slate-600 hover:text-slate-900">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <span className="absolute top-1 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
@@ -129,7 +131,11 @@ export function MobileDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           <span className="text-[18px] font-bold text-slate-800 tracking-tight">
             ⚡ AdsCommand
           </span>
-          <button onClick={onClose} className="p-2 -mr-2 text-slate-500 hover:text-slate-800 rounded-full">
+          <button
+            aria-label={t("shell.closeMenu")}
+            onClick={onClose}
+            className="rounded-full p-2 -mr-2 text-slate-500 hover:text-slate-800"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
