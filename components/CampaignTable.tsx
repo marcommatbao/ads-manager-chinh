@@ -747,9 +747,9 @@ export default function CampaignTable({ campaigns, isLoading = false, currency =
   return (
     <div className="space-y-3">
       {/* ── Filters bar ── */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
         {/* Search */}
-        <div className="relative min-w-[220px] flex-1">
+        <div className="relative min-w-0 flex-1 sm:min-w-[220px]">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
           <Input
             placeholder={t("campaigns.search.placeholder")}
@@ -760,13 +760,13 @@ export default function CampaignTable({ campaigns, isLoading = false, currency =
         </div>
 
         {/* Platform pills */}
-        <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-0.5">
+        <div className="flex max-w-full shrink-0 items-center gap-1 overflow-x-auto rounded-full border border-slate-200 bg-slate-50 p-0.5">
           {PLATFORM_PILLS.map(({ label: pillLabel, value }) => (
             <button
               key={value}
               onClick={() => setPlatform(value)}
               className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                "min-h-10 shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors",
                 platform === value
                   ? "bg-white text-slate-800 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
@@ -783,36 +783,36 @@ export default function CampaignTable({ campaigns, isLoading = false, currency =
       </div>
 
       {/* ── Health filter pills ── */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-white p-0.5 shadow-sm">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-slate-200 bg-white p-0.5 shadow-sm">
           <button
             onClick={() => setHealthFilter("all")}
-            className={cn("rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
+            className={cn("min-h-10 shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
               healthFilter === "all" ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-600")}
           >{t("campaigns.filter.all")}</button>
           <button
             onClick={() => setHealthFilter("active")}
-            className={cn("rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
+            className={cn("min-h-10 shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
               healthFilter === "active" ? "bg-green-600 text-white shadow-sm" : "text-slate-400 hover:text-slate-600")}
           >{t("campaigns.filter.active", { n: healthCounts.active })}</button>
           <button
             onClick={() => setHealthFilter("critical")}
-            className={cn("rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
+            className={cn("min-h-10 shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
               healthFilter === "critical" ? "bg-red-600 text-white shadow-sm" : "text-slate-400 hover:text-slate-600")}
           >{t("campaigns.filter.critical", { n: healthCounts.critical })}</button>
           <button
             onClick={() => setHealthFilter("good")}
-            className={cn("rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
+            className={cn("min-h-10 shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
               healthFilter === "good" ? "bg-emerald-600 text-white shadow-sm" : "text-slate-400 hover:text-slate-600")}
           >{t("campaigns.filter.good", { n: healthCounts.good })}</button>
           <button
             onClick={() => setHealthFilter("learning")}
-            className={cn("rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
+            className={cn("min-h-10 shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
               healthFilter === "learning" ? "bg-blue-500 text-white shadow-sm" : "text-slate-400 hover:text-slate-600")}
           >{t("campaigns.filter.learning", { n: healthCounts.learning })}</button>
           <button
             onClick={() => setHealthFilter("paused")}
-            className={cn("rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
+            className={cn("min-h-10 shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
               healthFilter === "paused" ? "bg-slate-500 text-white shadow-sm" : "text-slate-400 hover:text-slate-600")}
           >{t("campaigns.filter.paused", { n: healthCounts.paused })}</button>
         </div>
@@ -821,14 +821,14 @@ export default function CampaignTable({ campaigns, isLoading = false, currency =
         <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-white p-0.5 shadow-sm">
           <button
             onClick={() => setCompanyFilter("all")}
-            className={cn("rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
+            className={cn("min-h-10 shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
               companyFilter === "all" ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-slate-600")}
           >{t("campaigns.filter.all")}</button>
           {companyIds().map((co) => (
             <button
               key={co}
               onClick={() => setCompanyFilter(co)}
-              className={cn("rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
+              className={cn("min-h-10 shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors",
                 companyFilter === co ? `${co === "MBC" ? "bg-blue-600" : co === "MBI" ? "bg-purple-600" : "bg-slate-700"} text-white shadow-sm` : "text-slate-400 hover:text-slate-600")}
             >
               {t("campaigns.filter.company", { name: co === "MBC" || co === "MBI" ? co : companyLabel(co), count: companyCounts[co]?.count ?? 0, spend: fmtSpendShort(companyCounts[co]?.spend ?? 0) })}
@@ -839,6 +839,7 @@ export default function CampaignTable({ campaigns, isLoading = false, currency =
 
       {/* ── Table ── */}
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <p className="border-b border-slate-100 px-3 py-2 text-[11px] text-slate-400 md:hidden">Vuốt ngang để xem đủ cột và thao tác</p>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -1337,6 +1338,7 @@ export default function CampaignTable({ campaigns, isLoading = false, currency =
                           <button
                             className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
                             title={t("campaigns.action.edit")}
+                            aria-label={`${t("campaigns.action.edit")}: ${c.name}`}
                             onClick={() => setEditingBudgetCampaign(c)}
                           >
                             <Pencil className="h-3.5 w-3.5" />
@@ -1344,6 +1346,7 @@ export default function CampaignTable({ campaigns, isLoading = false, currency =
                           <button
                             className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
                             title={c.status === "ACTIVE" ? t("campaigns.action.pause") : t("campaigns.action.reactivate")}
+                            aria-label={`${c.status === "ACTIVE" ? t("campaigns.action.pause") : t("campaigns.action.reactivate")}: ${c.name}`}
                             onClick={() => setConfirmToggleData(c)}
                             disabled={pausingId === c.id}
                           >
@@ -1358,6 +1361,7 @@ export default function CampaignTable({ campaigns, isLoading = false, currency =
                           <button
                             className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-amber-50 hover:text-amber-700"
                             title={t("campaigns.action.cloneTip")}
+                            aria-label={`${t("campaigns.action.cloneTip")}: ${c.name}`}
                             onClick={() => router.push(
                               `/creative?clone=${encodeURIComponent(c.id)}&cloneName=${encodeURIComponent(c.name)}&cloneObj=${encodeURIComponent(c.objective ?? "")}`
                             )}
