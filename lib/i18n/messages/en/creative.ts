@@ -1084,7 +1084,14 @@ export const creative: Translation<typeof vi> = {
   "creative.settingsBudget.noPerm": "You do not have permission to save the budget",
   "creative.settingsBudget.saving": "Saving...",
   "creative.settingsBudget.saveBtn": "Save budget settings",
-  // jobs
+    "creative.analysis.colCreative": "Creative",
+  "creative.analysis.colPlatform": "Platform",
+  "creative.analysis.colScore": "Score",
+  "creative.campaignDetail.status": "Status",
+  "creative.campaignDetail.clicks": "Clicks",
+  "creative.campaignDetail.ctr": "CTR",
+  "creative.campaignDetail.cpc": "CPC",
+// jobs
   "creative.settingsJobs.ago.s": "{n}s ago",
   "creative.settingsJobs.ago.m": "{n}m ago",
   "creative.settingsJobs.ago.h": "{n}h ago",

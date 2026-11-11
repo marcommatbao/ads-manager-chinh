@@ -375,9 +375,9 @@ export default function CampaignDetailPage() {
                   <tr className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
                     <th className="text-left px-4 py-3 font-semibold">{t("creative.campaignDetail.colDate")}</th>
                     <th className="text-right px-3 py-3 font-semibold">{t("creative.campaignDetail.cost")}</th>
-                    <th className="text-right px-3 py-3 font-semibold">Impressions</th>
-                    <th className="text-right px-3 py-3 font-semibold">Clicks</th>
-                    <th className="text-right px-3 py-3 font-semibold">CTR</th>
+                    <th className="text-right px-3 py-3 font-semibold">{t("creative.campaignDetail.impressions")}</th>
+                    <th className="text-right px-3 py-3 font-semibold">{t("creative.campaignDetail.clicks")}</th>
+                    <th className="text-right px-3 py-3 font-semibold">{t("creative.campaignDetail.ctr")}</th>
                     <th className="text-right px-3 py-3 font-semibold">Leads</th>
                     <th className="text-right px-3 py-3 font-semibold">CPL</th>
                   </tr>
@@ -420,12 +420,12 @@ export default function CampaignDetailPage() {
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
                     <th className="text-left px-4 py-3 font-semibold">{isGoogle ? t("creative.campaignDetail.adGroupName") : t("creative.campaignDetail.adSetName")}</th>
-                    <th className="text-center px-3 py-3 font-semibold">Status</th>
+                    <th className="text-center px-3 py-3 font-semibold">{t("creative.campaignDetail.status")}</th>
                     <th className="text-right px-3 py-3 font-semibold">{t("creative.campaignDetail.cost")}</th>
-                    <th className="text-right px-3 py-3 font-semibold">Impressions</th>
-                    <th className="text-right px-3 py-3 font-semibold">Clicks</th>
-                    <th className="text-right px-3 py-3 font-semibold">CTR</th>
-                    <th className="text-right px-3 py-3 font-semibold">CPC</th>
+                    <th className="text-right px-3 py-3 font-semibold">{t("creative.campaignDetail.impressions")}</th>
+                    <th className="text-right px-3 py-3 font-semibold">{t("creative.campaignDetail.clicks")}</th>
+                    <th className="text-right px-3 py-3 font-semibold">{t("creative.campaignDetail.ctr")}</th>
+                    <th className="text-right px-3 py-3 font-semibold">{t("creative.campaignDetail.cpc")}</th>
                     <th className="text-right px-3 py-3 font-semibold">{isGoogle ? "Conversions" : "Leads"}</th>
                   </tr>
                 </thead>

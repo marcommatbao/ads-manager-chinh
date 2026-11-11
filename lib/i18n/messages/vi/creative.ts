@@ -1082,7 +1082,14 @@ export const creative = {
   "creative.settingsBudget.noPerm": "Bạn không có quyền lưu ngân sách",
   "creative.settingsBudget.saving": "Đang lưu...",
   "creative.settingsBudget.saveBtn": "Lưu cài đặt ngân sách",
-  // jobs
+    "creative.analysis.colCreative": "Creative",
+  "creative.analysis.colPlatform": "Nền tảng",
+  "creative.analysis.colScore": "Điểm",
+  "creative.campaignDetail.status": "Trạng thái",
+  "creative.campaignDetail.clicks": "Lượt click",
+  "creative.campaignDetail.ctr": "CTR",
+  "creative.campaignDetail.cpc": "CPC",
+// jobs
   "creative.settingsJobs.ago.s": "{n} giây trước",
   "creative.settingsJobs.ago.m": "{n} phút trước",
   "creative.settingsJobs.ago.h": "{n} giờ trước",

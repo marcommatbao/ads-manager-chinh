@@ -246,12 +246,12 @@ function PerformanceTab() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50 text-xs text-slate-500 font-semibold uppercase tracking-wide">
-                  <th className="px-4 py-3 text-left">Creative</th>
-                  <th className="px-4 py-3 text-left">Platform</th>
+                  <th className="px-4 py-3 text-left">{t("creative.analysis.colCreative")}</th>
+                  <th className="px-4 py-3 text-left">{t("creative.analysis.colPlatform")}</th>
                   <th className="px-4 py-3 text-right">CTR</th>
                   <th className="px-4 py-3 text-right">{t("creative.analysis.colImpressions")}</th>
                   <th className="px-4 py-3 text-right">{t("creative.analysis.colCost")}</th>
-                  <th className="px-4 py-3 text-right">Score</th>
+                  <th className="px-4 py-3 text-right">{t("creative.analysis.colScore")}</th>
                   <th className="px-4 py-3 text-left">{t("creative.analysis.colStatus")}</th>
                 </tr>
               </thead>
