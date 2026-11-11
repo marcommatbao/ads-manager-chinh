@@ -1367,6 +1367,10 @@ export const overview = {
   "overview.kpiov.ratioMissingHint": "Tử số (chi phí) đang thiếu vài tháng nên tỉ lệ này thấp hơn thực tế",
   // UnifiedOverview
   "overview.unified.title": "📊 Tổng quan tất cả kênh",
+  "overview.unified.subtitle": "Chi phí quảng cáo theo khoảng thời gian đã chọn · số thực từ Meta và Google Ads",
+  "overview.unified.sourceMeta": "Nguồn: Meta Ads",
+  "overview.unified.sourceGoogle": "Nguồn: Google Ads",
+  "overview.unified.updated": "Theo khoảng thời gian đã chọn",
   "overview.unified.googleError": "⚠️ Không lấy được data Google Ads — đang hiển thị Facebook only",
   "overview.unified.retry": "Thử lại",
   "overview.unified.totalSpend": "💰 Tổng Spend",

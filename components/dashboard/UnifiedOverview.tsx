@@ -167,12 +167,16 @@ export default function UnifiedOverview() {
     <div className="w-full space-y-4">
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-800">
-          {t("overview.unified.title")}
-        </h2>
-        <p className="text-xs text-slate-400">
-          {dateRange.from} → {dateRange.to}
-        </p>
+        <div>
+          <h2 className="text-lg font-semibold text-gray-800">
+            {t("overview.unified.title")}
+          </h2>
+          <p className="mt-0.5 text-xs text-slate-500">{t("overview.unified.subtitle")}</p>
+        </div>
+        <div className="text-right text-xs text-slate-400">
+          <p>{dateRange.from} → {dateRange.to}</p>
+          <p className="mt-0.5">{t("overview.unified.updated")}</p>
+        </div>
       </div>
 
       {/* ── Google Error Banner ── */}
@@ -234,6 +238,10 @@ export default function UnifiedOverview() {
               className="bg-red-500 transition-all duration-500"
               style={{ width: `${google.budgetPct}%` }}
             />
+          </div>
+          <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-400" aria-label="Nguồn dữ liệu">
+            <span>{t("overview.unified.sourceMeta")}</span>
+            <span>{t("overview.unified.sourceGoogle")}</span>
           </div>
         </div>
 

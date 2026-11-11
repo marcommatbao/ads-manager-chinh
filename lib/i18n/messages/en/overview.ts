@@ -1369,6 +1369,10 @@ export const overview: Translation<typeof vi> = {
   "overview.kpiov.ratioMissingHint": "The numerator (cost) is missing some months, so this ratio is lower than actual",
   // UnifiedOverview
   "overview.unified.title": "📊 All-channel overview",
+  "overview.unified.subtitle": "Ad spend for the selected period · live figures from Meta and Google Ads",
+  "overview.unified.sourceMeta": "Source: Meta Ads",
+  "overview.unified.sourceGoogle": "Source: Google Ads",
+  "overview.unified.updated": "For the selected period",
   "overview.unified.googleError": "⚠️ Could not fetch Google Ads data — showing Facebook only",
   "overview.unified.retry": "Retry",
   "overview.unified.totalSpend": "💰 Total spend",
