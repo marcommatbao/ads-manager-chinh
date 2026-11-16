@@ -91,9 +91,20 @@ export interface GoogleAccountBreakdown extends GoogleSummaryRaw {
   accountName: string;
 }
 
-// ─────────────────────────────────────────────
-// Helper
-// ─────────────────────────────────────────────
+export interface GoogleAccountBudget {
+  accountId: string;
+  accountName: string;
+  currency: string | null;
+  approvedSpendingLimitMicros: number | null;
+  amountServedMicros: number | null;
+  totalAdjustmentsMicros: number | null;
+  remainingMicros: number | null;
+  status: string | null;
+  source: "account_budget" | "unsupported" | "error";
+  error?: string;
+  updatedAt: string;
+}
+
 
 /** Convert micros (Google's money unit) to dollars/VND. */
 export function convertMicros(micros: number): number {
@@ -531,7 +542,55 @@ class GoogleAdsClient {
     };
   }
 
-  // ── 5. Unique users (reach) theo campaign ──
+  // ── 5. Account billing budget/balance ──
+  // Google Ads API exposes account budget figures, not the Billing UI itself.
+  // Keep the source explicit so the UI never presents an unavailable value as 0.
+  async getAccountBudgets(): Promise<GoogleAccountBudget[]> {
+    const ids = this.customerIds;
+    const updatedAt = new Date().toISOString();
+    return Promise.all(ids.map(async (customerId): Promise<GoogleAccountBudget> => {
+      try {
+        const customer = this.getCustomer(customerId);
+        const rows = await customer.query(`
+          SELECT
+            account_budget.status,
+            account_budget.approved_spending_limit_micros,
+            account_budget.amount_served_micros,
+            account_budget.total_adjustments_micros,
+            account_budget.adjusted_spending_limit_micros,
+            account_budget.approved_end_date_time,
+            customer.currency_code
+          FROM account_budget
+        `);
+        // An account can have multiple budget rows over time. Use the active
+        // row when available, otherwise the first row returned by Google.
+        // AccountBudgetStatus: APPROVED = 3 (thư viện có thể trả số hoặc chuỗi).
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const list = rows as any[];
+        const isApproved = (r: any) => r.account_budget?.status === 3 || r.account_budget?.status === "APPROVED";
+        const now = Date.now();
+        const isCurrent = (r: any) => { const end = r.account_budget?.approved_end_date_time; return !end || Date.parse(String(end).replace(" ", "T")) > now };
+        const row = list.find((r) => isApproved(r) && isCurrent(r)) ?? list.find(isApproved);
+        if (!row?.account_budget) {
+          return { accountId: customerId, accountName: this.accountName(customerId), currency: row?.customer?.currency_code ?? null, approvedSpendingLimitMicros: null, amountServedMicros: null, totalAdjustmentsMicros: null, remainingMicros: null, status: null, source: "unsupported", error: "Google Ads không trả account budget cho tài khoản này.", updatedAt };
+        }
+        const b = row.account_budget;
+        const approved = b.approved_spending_limit_micros == null ? null : Number(b.approved_spending_limit_micros);
+        const served = b.amount_served_micros == null ? null : Number(b.amount_served_micros);
+        const adjustments = b.total_adjustments_micros == null ? null : Number(b.total_adjustments_micros);
+        // adjusted_spending_limit đã gồm các khoản điều chỉnh — KHÔNG cộng thêm total_adjustments (tính trùng).
+        const limit = b.adjusted_spending_limit_micros != null ? Number(b.adjusted_spending_limit_micros) : approved;
+        const remaining = limit !== null && served !== null ? limit - served : null;
+        return { accountId: customerId, accountName: this.accountName(customerId), currency: row.customer?.currency_code ?? null, approvedSpendingLimitMicros: approved, amountServedMicros: served, totalAdjustmentsMicros: adjustments, remainingMicros: remaining, status: "APPROVED", source: "account_budget", updatedAt };
+      } catch (err: unknown) {
+        const message = extractGoogleError(err);
+        console.error(`[GoogleAdsClient] getAccountBudgets[${customerId}] error:`, message);
+        return { accountId: customerId, accountName: this.accountName(customerId), currency: null, approvedSpendingLimitMicros: null, amountServedMicros: null, totalAdjustmentsMicros: null, remainingMicros: null, status: null, source: "error", error: message, updatedAt };
+      }
+    }));
+  }
+
+  // ── 6. Unique users (reach) theo campaign ──
   //
   // TÁCH HẲN khỏi getCampaignInsights CÓ CHỦ Ý. metrics.unique_users là chỉ số
   // "reach", Google chỉ trả cho một số loại chiến dịch (Video/Display) và có
@@ -602,7 +661,4 @@ class GoogleAdsClient {
   }
 }
 
-// ─────────────────────────────────────────────
-// Singleton export
-// ─────────────────────────────────────────────
 export const googleAdsClient = new GoogleAdsClient();

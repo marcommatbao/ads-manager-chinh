@@ -47,6 +47,17 @@ interface UnifiedSummary {
    *  declaredValue ở trên (Meta/Google tự khai). */
   mbcRevenue: { value: number | null; error: string | null };
   mbiOrders: { value: number | null; error: string | null };
+  googleBalances?: Array<{
+    company: string;
+    accountId: string;
+    accountName: string;
+    currency: string | null;
+    remaining: number | null;
+    amountServed: number | null;
+    source: "account_budget" | "unsupported" | "error";
+    error?: string;
+    updatedAt: string;
+  }>;
 }
 
 // ── Helpers ──
@@ -153,7 +164,7 @@ export default function UnifiedOverview() {
 
   if (!data) return null;
 
-  const { total, facebook, google, mbcRevenue, mbiOrders } = data;
+  const { total, facebook, google, mbcRevenue, mbiOrders, googleBalances = [] } = data;
 
   // total.spend chỉ ĐÚNG LÀ chi phí MBC khi bộ lọc trên đang chọn "MBC" —
   // route.ts chỉ scope theo company trong nhánh đó. mbcRevenue giờ LUÔN có
@@ -194,7 +205,39 @@ export default function UnifiedOverview() {
         </div>
       )}
 
-      {/* ── 3 Metric Cards ── */}
+      {/* ── Google Ads account balance ── */}
+      <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 shadow-sm" aria-labelledby="google-balance-title">
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 id="google-balance-title" className="text-base font-semibold text-slate-800">{t("overview.unified.googleBalance.title")}</h3>
+            <p className="mt-0.5 text-xs text-slate-500">{t("overview.unified.googleBalance.subtitle")}</p>
+          </div>
+          <span className="text-[11px] text-slate-400">{t("overview.unified.googleBalance.source")}</span>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {["MBC", "MBI"].map((companyCode) => {
+            const balance = googleBalances.find((item) => item.company === companyCode || item.accountId === companyCode);
+            const unavailable = !balance || balance.source !== "account_budget" || balance.remaining === null;
+            return (
+              <div key={companyCode} className="rounded-xl border border-white bg-white p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-slate-800">{companyCode} — Google Ads</p>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">{balance?.accountName ?? t("overview.unified.googleBalance.accountUnavailable")}</span>
+                </div>
+                {unavailable ? (
+                  <p className="mt-3 text-sm font-medium text-amber-700">{balance?.error ?? t("overview.unified.googleBalance.unavailable")}</p>
+                ) : (
+                  <>
+                    <p className="mt-2 text-2xl font-bold text-slate-900">{balance.currency === "VND" || !balance.currency ? "₫" : `${balance.currency} `}{formatMoney(balance.remaining!)}</p>
+                    <p className="mt-1 text-[11px] text-slate-500">{t("overview.unified.googleBalance.updated", { time: new Date(balance.updatedAt).toLocaleString(loc) })}</p>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* Total Spend */}
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">

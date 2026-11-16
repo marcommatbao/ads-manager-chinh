@@ -153,6 +153,10 @@ export async function GET(request: NextRequest) {
     ggError = e instanceof Error ? e.message : "Google error";
   }
 
+  // ── Google Ads account budget/balance ──
+  // This is independent of the selected date range and campaign spend.
+  const googleBalances = await googleAdsClient.getAccountBudgets();
+
   // ── Doanh thu MBC + đơn hàng MBI THẬT (Odoo) ──
   //
   // declaredValue ở dưới (fbDeclared/ggDeclared) là do Meta/Google TỰ KHAI —
@@ -266,6 +270,7 @@ export async function GET(request: NextRequest) {
       insight:  { betterChannel, cplDiffPct, shouldRebalance, recommendation, comparable },
       mbcRevenue: { value: mbcRevenue, error: mbcRevenueError },
       mbiOrders: { value: mbiOrders, error: mbiOrdersError },
+      googleBalances: googleBalances.map((b) => ({ ...b, company: Object.entries(GOOGLE_CUSTOMER_IDS).find(([, id]) => String(id).replace(/-/g, "") === b.accountId.replace(/-/g, ""))?.[0] ?? b.accountName, remaining: b.remainingMicros === null ? null : convertMicros(b.remainingMicros), amountServed: b.amountServedMicros === null ? null : convertMicros(b.amountServedMicros) })),
     },
     breakdown: [
       { channel: "facebook", error: fbError },
