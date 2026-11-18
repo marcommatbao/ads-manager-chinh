@@ -29,6 +29,8 @@ export interface ProfitQuality {
 }
 
 export interface ProfitReport {
+  formulaVersion: "phase6-v1";
+  requiresBaApproval: boolean;
   quality: ProfitQuality;
   grossRevenue: number | null;
   refunds: number | null;
@@ -66,6 +68,8 @@ export function calculateProfit(input: ProfitInput): ProfitReport {
 
   if (!allowed) {
     return {
+      formulaVersion: "phase6-v1",
+      requiresBaApproval: true,
       quality: { confidence: "insufficient", allowed: false, reason, from, to, readAt },
       grossRevenue: null, refunds: null, netRevenue: null, cogs: null,
       grossProfit: null, adSpend: null, netProfitAfterAds: null,
@@ -82,6 +86,8 @@ export function calculateProfit(input: ProfitInput): ProfitReport {
   const netProfitAfterAds = grossProfit - adSpend;
 
   return {
+    formulaVersion: "phase6-v1",
+    requiresBaApproval: true,
     quality: { confidence: "high", allowed: true, reason, from, to, readAt },
     grossRevenue, refunds, netRevenue, cogs, grossProfit, adSpend, netProfitAfterAds,
     grossMarginPct: netRevenue > 0 ? (grossProfit / netRevenue) * 100 : null,

@@ -36,5 +36,6 @@
 - [x] Return `insufficient` when COGS or any required component is unavailable.
 - [ ] BA confirm business formulas and refund/COGS definitions.
 - [x] Expose authenticated profit readiness API; missing ledgers return explicit `insufficient` with missing source list.
+- [x] Mark formula version and BA approval requirement in the profit report.
 - [ ] Integrate real COGS/refund sources and expose populated profit API/UI.
 - [ ] Add runtime acceptance for profit calculations.

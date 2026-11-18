@@ -25,6 +25,8 @@ describe("GET /api/finance/profit", () => {
     const response = await GET(request());
     const payload = await response.json();
     expect(response.status).toBe(200);
+    expect(payload.report.formulaVersion).toBe("phase6-v1");
+    expect(payload.report.requiresBaApproval).toBe(true);
     expect(payload.report.quality.allowed).toBe(false);
     expect(payload.report.quality.confidence).toBe("insufficient");
     expect(payload.report.netProfitAfterAds).toBeNull();
