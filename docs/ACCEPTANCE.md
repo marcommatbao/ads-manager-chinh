@@ -13,6 +13,11 @@
 | G3-09 | Dashboard shows quality mode and evidence | `BriefingEvidencePanel` + dashboard card | PASS |
 | G3-10 | Loading/error/blocked/empty states are represented | Existing card + blocked mode UI | PARTIAL |
 
-## Gate decision
+## Phase 4 evidence
+
+- Forecast quality contract tests: PASS.
+- Google budget-pacing route integration tests: PASS (observed-day evidence, campaign budget kind, insufficient-data null projection).
+- Runtime connector acceptance for account balance, campaign budget, and internal KPI: PENDING because preview has no provider credentials.
+
 
 Gate 3 implementation is **in progress**, not fully closed. The remaining mandatory work is route-level integration testing (including asserting Gemini call count), and an authenticated UI/API acceptance run on the configured staging/beta environment. Do not claim production readiness or start Giai đoạn 4 until those checks pass.

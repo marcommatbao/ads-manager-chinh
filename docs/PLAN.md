@@ -16,4 +16,5 @@
 - Do not apply budget changes automatically.
 - [x] Wire this contract into the Google budget-pacing API response with `forecastQuality`, `forecastAllowed`, and nullable projection fields.
 - [x] Wire quality state into budget-pacing UI states; insufficient forecasts show an explicit warning and nullable projection values are not rendered.
-- [ ] Add source-specific integration tests and account-balance/campaign-budget/KPI acceptance.
+- [x] Add source-specific Google Ads integration tests for observed-day quality and nullable projections.
+- [ ] Complete runtime acceptance for account balance, campaign budget, and internal KPI sources with configured connectors.
