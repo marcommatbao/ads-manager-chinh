@@ -379,7 +379,7 @@ export default function CampaignsPage() {
         if (activeFilter.platform === "FACEBOOK" && c.platform === "facebook") {
           passObjective = c.objective === activeFilter.objective;
         } else if (activeFilter.platform === "GOOGLE" && c.platform === "google") {
-          const rawType = (c as any).channelType || c.objective || "UNKNOWN";
+          const rawType = c.channelType || c.objective || "UNKNOWN";
           passObjective = String(rawType).toUpperCase() === activeFilter.objective;
         } else {
           passObjective = false; // Filter out if platform mismatch
