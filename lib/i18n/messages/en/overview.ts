@@ -1190,6 +1190,10 @@ export const overview: Translation<typeof vi> = {
   "overview.health.testalert.desc": "Sends a test card to the system alert channel — use it to confirm Teams still receives notifications.",
   // CompanyPnL
   "overview.pnl.title": "Ad cost efficiency by company",
+  "overview.pnl.profitReadiness.title": "Profit readiness",
+  "overview.pnl.profitReadiness.insufficient": "Not enough data to conclude profit",
+  "overview.pnl.profitReadiness.missing": "Missing sources: {sources}",
+  "overview.pnl.profitReadiness.baApproval": "Formula requires BA approval before decision use",
   "overview.pnl.subtitle": "Ad cost × Revenue/Orders",
   "overview.pnl.daysElapsed": "{elapsed}/{total} days",
   "overview.pnl.mode.month": "Month",

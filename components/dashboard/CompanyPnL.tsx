@@ -251,8 +251,34 @@ export default function CompanyPnL() {
           {!mbc && !mbi && <p className="text-sm text-slate-400 py-6 text-center col-span-2">{t("overview.pnl.noCompany")}</p>}
         </div>
       )}
+      <ProfitReadiness company={mbc ? "MBC" : mbi ? "MBI" : null} from={mode === "month" ? `${month}-01` : undefined} to={mode === "month" ? `${month}-${new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate()}` : undefined} />
     </div>
   );
+}
+
+function ProfitReadiness({ company, from, to }: { company: string | null; from?: string; to?: string }) {
+  const t = useT();
+  const [state, setState] = useState<{ loading: boolean; report?: { quality: { reason: string; confidence: string }; formulaVersion: string; requiresBaApproval: boolean }; missing?: string[]; error?: string }>({ loading: true });
+  useEffect(() => {
+    if (!company) return;
+    const query = new URLSearchParams({ company });
+    if (from) query.set("from", from);
+    if (to) query.set("to", to);
+    let cancelled = false;
+    fetch(`/api/finance/profit?${query}`).then(async response => {
+      const payload = await response.json();
+      if (!response.ok || !payload.success) throw new Error(payload.error ?? "profit readiness failed");
+      if (!cancelled) setState({ loading: false, report: payload.report, missing: payload.missingSources });
+    }).catch((error: unknown) => {
+      if (!cancelled) setState({ loading: false, error: error instanceof Error ? error.message : "profit readiness failed" });
+    });
+    return () => { cancelled = true; };
+  }, [company, from, to]);
+  if (!company || state.loading) return null;
+  return <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] text-amber-800">
+    <div className="flex items-center justify-between gap-2 font-semibold"><span>{t("overview.pnl.profitReadiness.title")} · {company}</span><span className="rounded-full bg-amber-100 px-2 py-0.5">{state.report?.formulaVersion ?? "—"}</span></div>
+    {state.error ? <p className="mt-1">{state.error}</p> : <><p className="mt-1">{t("overview.pnl.profitReadiness.insufficient")}</p><p className="mt-1 text-amber-700">{state.report?.quality.reason}</p>{state.missing?.length ? <p className="mt-1 text-[10px]">{t("overview.pnl.profitReadiness.missing", { sources: state.missing.join(", ") })}</p> : null}{state.report?.requiresBaApproval && <p className="mt-1 font-semibold">{t("overview.pnl.profitReadiness.baApproval")}</p>}</>}
+  </div>;
 }
 
 function SpendRow({ g, f, t: totalSpend, accent, fbError, ggError, fbStaleAt, manualExcluded, spendDelta, byChannel, budget, channels }: {

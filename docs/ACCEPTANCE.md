@@ -18,7 +18,7 @@
 - Evidence-backed profit contract: PASS in `profit-quality.test.ts`.
 - Missing COGS blocks profit/margin/break-even conclusions: PASS.
 - Mismatched component date ranges block calculation: PASS.
-- Authenticated profit readiness API returns explicit `insufficient` and missing source list: PASS in `profit-route.test.ts`.
+- P&L profit-readiness panel shows insufficient state, missing sources, formula version, and BA approval notice: PASS (TypeScript; browser acceptance pending).
 - Formula metadata (`phase6-v1`) and `requiresBaApproval` are explicit: PASS.
 - BA formula confirmation, real COGS/refund integration, and populated runtime acceptance: PENDING.
 

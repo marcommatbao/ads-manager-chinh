@@ -1188,6 +1188,10 @@ export const overview = {
   "overview.health.testalert.desc": "Gửi một thẻ thử tới kênh cảnh báo hệ thống — dùng để xác nhận Teams còn nhận được thông báo.",
   // CompanyPnL
   "overview.pnl.title": "Hiệu quả chi phí theo công ty",
+  "overview.pnl.profitReadiness.title": "Sẵn sàng tính lợi nhuận",
+  "overview.pnl.profitReadiness.insufficient": "Chưa đủ dữ liệu để kết luận lợi nhuận",
+  "overview.pnl.profitReadiness.missing": "Nguồn còn thiếu: {sources}",
+  "overview.pnl.profitReadiness.baApproval": "Công thức cần BA xác nhận trước khi dùng cho quyết định",
   "overview.pnl.subtitle": "Chi phí QC × Doanh thu/Đơn",
   "overview.pnl.daysElapsed": "{elapsed}/{total} ngày",
   "overview.pnl.mode.month": "Tháng",
