@@ -45,6 +45,6 @@
 - [x] Deterministic budget evaluator with source/stale/attribution/learning/cooldown/floor/ceiling guards.
 - [x] Decision audit store without secrets.
 - [x] Authenticated dry-run endpoint with company scope and `mutationPerformed: false`.
-- [ ] Approval endpoint with TTL and snapshot hash.
+- [x] Approval-only endpoint with manager/admin RBAC, TTL, and snapshot hash.
 - [ ] Provider apply/read-back/undo adapters.
 - [ ] Supervised rollout and runtime acceptance.
