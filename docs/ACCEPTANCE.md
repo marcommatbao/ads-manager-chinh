@@ -39,3 +39,9 @@
 
 
 Gate 3 implementation is **in progress**, not fully closed. Contract-level tests now cover the AI call guard and history auth. The remaining item is authenticated UI/API acceptance on configured staging/beta; do not claim production readiness until that environment evidence exists.
+
+## Deterministic automation evidence
+
+- Evaluator fail-closed guards and approval-required decisions: PASS in `profit-evaluator.test.ts`.
+- Dry-run auth/scope and no-provider-mutation contract: PASS in `dry-run-route.test.ts`.
+- Apply/approval/provider read-back: NOT IMPLEMENTED yet; no production mutation is enabled.

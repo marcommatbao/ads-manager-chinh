@@ -23,7 +23,7 @@
       },
       "gate6": {
         "status": "in_progress",
-        "progress": 55,
+        "progress": 60,
         "completed": ["evidence-backed profit contract and insufficient-COGS safeguards"],
         "remaining": ["BA confirmation of formulas", "COGS/refund source integration", "profit API/UI acceptance"]
       },
