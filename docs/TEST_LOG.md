@@ -6,9 +6,9 @@ Date: 2026-11-18
 
 - `npx tsc --noEmit --pretty false` — PASS
 - `npx vitest run tests/morning-briefing-quality.test.ts tests/morning-briefing-history.test.ts tests/data-truth.test.ts tests/company-pnl-truth.test.ts --reporter=dot` — PASS (4 files, 9 tests)
-- `npx vitest run` focused Gate 3/4/5 suite — PASS (11 files, 30 tests); Vitest excludes `.next/**` to prevent built standalone test copies from sharing file-backed fixtures.
-
-- `npm run build` with Next.js 16.4.6 — PASS (optimized production build compiled successfully; existing middleware deprecation warning remains).
+- `npx vitest run` source-only after excluding `.next/**` and `.claude/**` — PASS (13 files, 36 tests; 71 live fixtures skipped).
+- `npx tsc --noEmit --pretty false` — PASS.
+- `npm run build` with Next.js 16.4.6 — PASS (optimized production build and route generation completed; middleware deprecation warning remains).
 
 - `tests/morning-briefing-history-route.test.ts` — PASS (3 tests): unauthenticated request returns 401, authenticated history response is returned, invalid limit falls back to 30.
 - Critical Meta unavailable → contract-level `generateAiSummaryWithQualityGate` test confirms AI callback count is zero; live connector-backed browser acceptance remains pending.
@@ -25,7 +25,7 @@ Date: 2026-11-18
 - Authenticated dashboard/evidence browser acceptance remains blocked by missing session/connector credentials and unresolved preview DNS; no AI-success claim is made.
 
 
-`npm run lint` is not green because the repository contains a pre-existing error in `app/(dashboard)/campaigns/page.tsx:382` (`no-explicit-any`), plus unrelated warnings. This Gate 3 work did not modify that location.
+Source-only lint after excluding `.next/**` and `.claude/**` — PASS (warnings only). Full lint workflow is now configured to avoid generated/worktree artifacts.
 
 ## Remaining verification
 
