@@ -109,6 +109,15 @@ export function shouldBlockAiAnalysis(evidence: BriefingEvidence[]): boolean {
   return evidence.some((item) => item.source === "meta" && item.status === "unavailable" && item.critical);
 }
 
+export async function generateAiSummaryWithQualityGate<T>(
+  evidence: BriefingEvidence[],
+  generate: () => Promise<T>,
+  blocked: () => T | Promise<T>,
+): Promise<T> {
+  if (shouldBlockAiAnalysis(evidence)) return blocked();
+  return generate();
+}
+
 // ─────────────────────────────────────────────
 // Date helpers
 // ─────────────────────────────────────────────

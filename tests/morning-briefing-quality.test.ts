@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { shouldBlockAiAnalysis, type BriefingEvidence } from "@/lib/morning-briefing";
+import { describe, expect, it, vi } from "vitest";
+import { shouldBlockAiAnalysis, generateAiSummaryWithQualityGate, type BriefingEvidence } from "@/lib/morning-briefing";
 
 const evidence = (status: BriefingEvidence["status"], source: BriefingEvidence["source"] = "meta"): BriefingEvidence => ({
   id: "test",
@@ -20,7 +20,25 @@ describe("morning briefing AI quality gate", () => {
     expect(shouldBlockAiAnalysis([evidence("complete"), evidence("partial")])).toBe(false);
   });
 
-  it("does not treat an existing fallback record as a source failure", () => {
-    expect(shouldBlockAiAnalysis([evidence("partial", "fallback")])).toBe(false);
+  it("does not call AI generation when a critical source is unavailable", async () => {
+    const generate = vi.fn().mockResolvedValue("ai");
+    const result = await generateAiSummaryWithQualityGate(
+      [evidence("unavailable")],
+      generate,
+      () => "blocked",
+    );
+    expect(result).toBe("blocked");
+    expect(generate).not.toHaveBeenCalled();
+  });
+
+  it("calls AI generation when sources are usable", async () => {
+    const generate = vi.fn().mockResolvedValue("ai");
+    const result = await generateAiSummaryWithQualityGate(
+      [evidence("complete")],
+      generate,
+      () => "blocked",
+    );
+    expect(result).toBe("ai");
+    expect(generate).toHaveBeenCalledOnce();
   });
 });

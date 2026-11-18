@@ -79,6 +79,11 @@ interface PlatformCardProps {
   currency?: string;
 }
 
+function PlatformValue({ v, isLoading }: { v: string; isLoading: boolean }) {
+  if (isLoading) return <div className="h-5 w-16 animate-pulse rounded bg-slate-100" />;
+  return <p className="text-base font-bold text-slate-800">{v}</p>;
+}
+
 function PlatformCard({
   name,
   accent,
@@ -91,11 +96,6 @@ function PlatformCard({
 }: PlatformCardProps & { notConnected?: boolean }) {
   const intl = useIntlLocale();
   const t = useT();
-  function Val({ v }: { v: string }) {
-    if (isLoading) return <div className="h-5 w-16 animate-pulse rounded bg-slate-100" />;
-    return <p className="text-base font-bold text-slate-800">{v}</p>;
-  }
-
   // Format spend for platform card
   const spendDisplay = formatCurrency(spend, currency, false, intl);
 
@@ -119,11 +119,11 @@ function PlatformCard({
         <div className="grid grid-cols-2 gap-3 text-center">
           <div>
             <p className="text-[11px] font-medium uppercase text-slate-400 mb-1">{t("overview.home.spendLabel")}</p>
-            <Val v={spendDisplay} />
+            <PlatformValue v={spendDisplay} isLoading={isLoading} />
           </div>
           <div>
             <p className="text-[11px] font-medium uppercase text-slate-400 mb-1">CTR</p>
-            <Val v={`${ctr.toFixed(2)}%`} />
+            <PlatformValue v={`${ctr.toFixed(2)}%`} isLoading={isLoading} />
           </div>
         </div>
       )}
@@ -739,7 +739,7 @@ function BudgetPacingCard() {
                     boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
                     fontSize: 11,
                   }}
-                  formatter={(val: any, name: any) => {
+                  formatter={(val: number | string | ReadonlyArray<number | string> | undefined, name: string | number | undefined) => {
                     const labels: Record<string, string> = {
                       actual: t("overview.home.seriesActual"),
                       ideal: t("overview.home.seriesIdeal"),

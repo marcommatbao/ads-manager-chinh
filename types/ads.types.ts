@@ -37,6 +37,8 @@ export interface Campaign {
   platform: Platform
   status: CampaignStatus
   objective: string
+  /** Google campaign channel type (Search, PMax, Display, ...). */
+  channelType?: string
   dailyBudget: number
   totalBudget: number
   startDate: string
