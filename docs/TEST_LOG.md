@@ -8,10 +8,10 @@ Date: 2026-11-18
 - `npx vitest run tests/morning-briefing-quality.test.ts tests/morning-briefing-history.test.ts tests/data-truth.test.ts tests/company-pnl-truth.test.ts --reporter=dot` — PASS (4 files, 9 tests)
 - `git diff --check` — PASS
 
-## Route integration checks
+- `npm run build` with Next.js 16.4.6 — PASS (optimized production build compiled successfully; existing middleware deprecation warning remains).
 
 - `tests/morning-briefing-history-route.test.ts` — PASS (3 tests): unauthenticated request returns 401, authenticated history response is returned, invalid limit falls back to 30.
-- Critical Meta unavailable → Gemini call-count integration remains pending because the current generator couples live provider clients to the route and requires a provider mock seam.
+- Critical Meta unavailable → contract-level `generateAiSummaryWithQualityGate` test confirms AI callback count is zero; live connector-backed browser acceptance remains pending.
 
 ## Preview deployment
 
