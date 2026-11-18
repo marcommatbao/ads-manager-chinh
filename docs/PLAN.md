@@ -14,4 +14,5 @@
 - Return confidence, source, date range, read time, reason, and budget kind.
 - Keep account balance, campaign budget, and internal KPI as distinct kinds.
 - Do not apply budget changes automatically.
-- Next: wire this contract into forecast/budget-pacing API responses and UI states, then add source-specific integration tests.
+- [x] Wire this contract into the Google budget-pacing API response with `forecastQuality`, `forecastAllowed`, and nullable projection fields.
+- [ ] Wire quality state into budget-pacing UI states and add source-specific integration tests.
