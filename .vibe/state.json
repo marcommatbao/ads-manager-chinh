@@ -11,7 +11,7 @@
       "status": "in_progress",
       "gate4": {
         "status": "in_progress",
-        "progress": 40,
+        "progress": 60,
         "completed": ["forecast quality contract and minimum-data tests"],
         "remaining": ["wire contract into budget-pacing APIs and UI", "source-specific integration tests", "account balance/campaign budget/KPI acceptance"]
       },

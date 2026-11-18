@@ -272,6 +272,7 @@ export const google: Translation<typeof vi> = {
   "google.budgetPacing.loadFailed": "couldn't load data",
   "google.budgetPacing.connError": "Google Ads connection error",
   "google.budgetPacing.subtitle": "Monthly budget spend pace",
+  "google.budgetPacing.forecastUnavailable": "Not enough data to forecast — at least 3 observed days and a valid budget are required.",
   "google.budgetPacing.subtitleDay": " — day {day}/{days} ({pct}% of the month elapsed)",
   "google.budgetPacing.refresh": "Refresh",
   "google.budgetPacing.legendSlow": "Behind expected",

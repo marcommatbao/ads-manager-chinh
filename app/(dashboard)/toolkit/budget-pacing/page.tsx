@@ -9,6 +9,17 @@ import { useSession } from "@/components/SessionProvider";
 import { useT } from "@/lib/i18n/client";
 import type { MessageKey } from "@/lib/i18n/messages";
 
+interface ForecastQuality {
+  confidence: "high" | "medium" | "low" | "insufficient";
+  minDaysRequired: number;
+  observedDays: number;
+  source: string;
+  from: string;
+  to: string;
+  readAt: string;
+  reason: string;
+}
+
 interface CampaignPacing {
   id: string;
   name: string;
@@ -19,9 +30,11 @@ interface CampaignPacing {
   actualPct: number;
   clicks: number;
   conversions: number;
-  recentDailyAvg: number;
-  projectedSpend: number;
-  projectedPct: number;
+  recentDailyAvg: number | null;
+  projectedSpend: number | null;
+  projectedPct: number | null;
+  forecastQuality: ForecastQuality;
+  forecastAllowed: boolean;
   willExceedBudget: boolean;
   daysUntilCapped: number | null;
 }
@@ -70,7 +83,7 @@ function CampaignRow({ c }: { c: CampaignPacing }) {
           {c.conversions > 0 && <span className="ml-1.5 text-emerald-500">{t("google.budgetPacing.conv", { n: Math.round(c.conversions) })}</span>}
         </span>
       </div>
-      {c.willExceedBudget && (
+      {c.forecastAllowed && c.willExceedBudget && c.projectedSpend !== null && c.projectedPct !== null && (
         <div className="flex items-center gap-1 rounded-md bg-red-50 px-1.5 py-1 text-[10px] text-red-600">
           <AlertCircle className="h-3 w-3 shrink-0" />
           <span>
@@ -145,6 +158,12 @@ function CompanyCard({ data, color }: { data: ApiResponse | null; color: string 
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
+        {campaigns.some(c => !c.forecastAllowed) && (
+          <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>{t("google.budgetPacing.forecastUnavailable")}</span>
+          </div>
+        )}
         {campaigns.map(c => <CampaignRow key={c.id} c={c} />)}
       </CardContent>
     </Card>
@@ -186,8 +205,8 @@ export default function BudgetPacingPage() {
 
       setMbc(results.find(r => r.company === "MBC")?.json ?? null);
       setMbi(results.find(r => r.company === "MBI")?.json ?? null);
-    } catch (e: any) {
-      setError(e.message || t("google.budgetPacing.connError"));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : t("google.budgetPacing.connError"));
     } finally {
       setLoading(false);
     }

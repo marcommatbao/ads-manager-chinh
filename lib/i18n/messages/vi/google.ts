@@ -270,6 +270,7 @@ export const google = {
   "google.budgetPacing.loadFailed": "không tải được dữ liệu",
   "google.budgetPacing.connError": "Lỗi kết nối Google Ads",
   "google.budgetPacing.subtitle": "Tốc độ tiêu ngân sách tháng này",
+  "google.budgetPacing.forecastUnavailable": "Dữ liệu chưa đủ để dự báo — cần ít nhất 3 ngày quan sát và ngân sách hợp lệ.",
   "google.budgetPacing.subtitleDay": " — ngày {day}/{days} ({pct}% thời gian)",
   "google.budgetPacing.refresh": "Làm mới",
   "google.budgetPacing.legendSlow": "Chậm hơn kỳ vọng",
