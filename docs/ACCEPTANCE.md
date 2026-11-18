@@ -13,7 +13,13 @@
 | G3-09 | Dashboard shows quality mode and evidence | `BriefingEvidencePanel` + dashboard card | PASS |
 | G3-10 | Loading/error/blocked/empty states are represented | Existing card + blocked mode UI | PARTIAL (authenticated browser pending) |
 
-## Phase 5 evidence
+## Phase 6 evidence
+
+- Evidence-backed profit contract: PASS in `profit-quality.test.ts`.
+- Missing COGS blocks profit/margin/break-even conclusions: PASS.
+- Mismatched component date ranges block calculation: PASS.
+- BA formula confirmation, real COGS/refund integration, and runtime acceptance: PENDING.
+
 
 - Campaign-label attribution contract: PASS.
 - Matched/unmatched order and revenue rates: PASS in `campaign-revenue-attribution.test.ts`.

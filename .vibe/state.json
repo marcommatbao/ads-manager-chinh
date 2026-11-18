@@ -21,6 +21,12 @@
         "completed": ["campaign-label attribution contract and match-rate tests", "event-store lead/order matcher", "deduplication and unmatched safeguards", "authenticated attribution report API"],
         "remaining": ["runtime acceptance with staging event stores"]
       },
+      "gate6": {
+        "status": "in_progress",
+        "progress": 20,
+        "completed": ["evidence-backed profit contract and insufficient-COGS safeguards"],
+        "remaining": ["BA confirmation of formulas", "COGS/refund source integration", "profit API/UI acceptance"]
+      },
       "gate3": {
         "status": "in_progress",
         "progress": 85,
