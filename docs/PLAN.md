@@ -7,7 +7,15 @@
 5. Run typecheck, focused tests, full safe tests, and diff checks.
 
 
-## Phase 4 start — Forecast quality contract
+## Phase 5 start — Campaign-label attribution
+
+- [x] Preserve the proven attribution boundary: Odoo `sale.order.campaign_id` only.
+- [x] Report matched/unmatched order and revenue counts/rates.
+- [x] Refuse MBI attribution where the business rule cannot separate it.
+- [x] Keep connector errors explicit; never interpret an empty report as zero revenue.
+- [ ] Add UTM/click/session evidence ingestion without inventing links Odoo does not store.
+- [ ] Add lead-to-order matching and duplicate prevention.
+- [ ] Add runtime acceptance for matched/unmatched attribution.
 
 - Add `lib/forecast-quality.ts` around the existing spend forecaster.
 - Require at least 3 observed days and a valid budget before allowing a forecast.

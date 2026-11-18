@@ -43,6 +43,8 @@ export interface CampaignRevenueReport {
   from: string;
   to: string;
   company: string /* mã công ty hoặc "ALL" */;
+  /** Bằng chứng hiện có: chỉ ở cấp nhãn campaign trong Odoo. */
+  attributionLevel: "campaign_label";
   rows: CampaignRevenueRow[];
   /** Tổng đơn trong kỳ, KỂ CẢ đơn không mang nhãn campaign nào. */
   totalOrders: number;
@@ -52,6 +54,9 @@ export interface CampaignRevenueReport {
    *  mất. Nói ra để không ai đọc "chỉ 20% đơn có nhãn" thành "tracking hỏng". */
   ordersWithoutCampaign: number;
   revenueWithoutCampaign: number;
+  /** Tỷ lệ đơn/doanh thu có nhãn campaign trong toàn bộ kỳ. */
+  matchedOrderRate: number;
+  matchedRevenueRate: number;
   error: string | null;
 }
 
@@ -75,8 +80,8 @@ export async function getCampaignRevenue(
   if (company === "MBC") base.push(["type_id.name", "in", MBC_TYPE_NAMES]);
 
   const empty: CampaignRevenueReport = {
-    from, to, company, rows: [], totalOrders: 0, totalRevenue: 0,
-    ordersWithoutCampaign: 0, revenueWithoutCampaign: 0, error: null,
+    from, to, company, attributionLevel: "campaign_label", rows: [], totalOrders: 0, totalRevenue: 0,
+    ordersWithoutCampaign: 0, revenueWithoutCampaign: 0, matchedOrderRate: 0, matchedRevenueRate: 0, error: null,
   };
 
   // MBI: quy tắc lọc của MBI là theo NGƯỜI BÁN (team + customer_source), không
@@ -141,6 +146,8 @@ export async function getCampaignRevenue(
       totalRevenue,
       ordersWithoutCampaign: totalOrders - taggedOrders,
       revenueWithoutCampaign: totalRevenue - taggedRevenue,
+      matchedOrderRate: totalOrders > 0 ? taggedOrders / totalOrders : 0,
+      matchedRevenueRate: totalRevenue > 0 ? taggedRevenue / totalRevenue : 0,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

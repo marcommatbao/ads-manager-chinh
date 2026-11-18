@@ -13,7 +13,13 @@
 | G3-09 | Dashboard shows quality mode and evidence | `BriefingEvidencePanel` + dashboard card | PASS |
 | G3-10 | Loading/error/blocked/empty states are represented | Existing card + blocked mode UI | PARTIAL (authenticated browser pending) |
 
-## Phase 4 evidence
+## Phase 5 evidence
+
+- Campaign-label attribution contract: PASS.
+- Matched/unmatched order and revenue rates: PASS in `campaign-revenue-attribution.test.ts`.
+- MBI unsupported attribution and Odoo failure remain explicit/non-attributed: PASS.
+- UTM/click/session and lead-to-order runtime acceptance: PENDING.
+
 
 - Forecast quality contract tests: PASS.
 - Google budget-pacing route integration tests: PASS (observed-day evidence, campaign budget kind, insufficient-data null projection).
