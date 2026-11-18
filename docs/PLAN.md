@@ -46,5 +46,6 @@
 - [x] Decision audit store without secrets.
 - [x] Authenticated dry-run endpoint with company scope and `mutationPerformed: false`.
 - [x] Approval-only endpoint with manager/admin RBAC, TTL, and snapshot hash.
-- [ ] Provider apply/read-back/undo adapters.
+- [x] Add provider-agnostic apply/read-before-write/read-back orchestration with mock adapter tests.
+- [ ] Implement Meta/Google staging adapters and undo contract.
 - [ ] Supervised rollout and runtime acceptance.

@@ -45,4 +45,5 @@ Gate 3 implementation is **in progress**, not fully closed. Contract-level tests
 - Evaluator fail-closed guards and approval-required decisions: PASS in `profit-evaluator.test.ts`.
 - Dry-run auth/scope and no-provider-mutation contract: PASS in `dry-run-route.test.ts`.
 - Approval-only RBAC/TTL/snapshot integrity and zero provider mutation: PASS in `automation-approval.test.ts` and `approve-route.test.ts`.
-- Apply/approval/provider read-back: NOT IMPLEMENTED yet; no production mutation is enabled.
+- Provider-agnostic apply/read-before-write/read-back orchestration with mock adapters: PASS in `provider-apply.test.ts`.
+- Real Meta/Google mutation, read-back, and undo adapters: NOT IMPLEMENTED; no provider writes enabled.
