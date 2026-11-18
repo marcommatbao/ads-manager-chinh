@@ -4,7 +4,7 @@ services:
       context: .
       args:
         AUTH_SECRET: ${AUTH_SECRET}
-    restart: unless-stopped
+    restart: "no"
     networks: [mb-edge]
     env_file:
       - .env
@@ -12,13 +12,16 @@ services:
       - appdata:/app/data
     labels:
       - traefik.enable=true
+      - mb.env=preview
+      - mb.owner=${CODER_USER:?CODER_USER chua duoc dat}
+      - mb.autostop=4
       # Domain đọc từ biến APP_HOST (đổi 17/09/2026) — không ghi cứng host nội bộ
       # trong repo công khai. Đặt APP_HOST trong .env trước khi `docker compose up`.
-      - "traefik.http.routers.ads-manager-trieunt.rule=Host(`${APP_HOST:?APP_HOST chua duoc dat}`)"
-      - traefik.http.routers.ads-manager-trieunt.entrypoints=websecure
-      - traefik.http.routers.ads-manager-trieunt.tls.certresolver=le
-      - traefik.http.services.ads-manager-trieunt.loadbalancer.server.port=3000
-      - traefik.http.routers.ads-manager-trieunt.middlewares=mb-local@file
+      - "traefik.http.routers.ads-manager-${CODER_USER}.rule=Host(`${APP_HOST:?APP_HOST chua duoc dat}`)"
+      - traefik.http.routers.ads-manager-${CODER_USER}.entrypoints=websecure
+      - traefik.http.routers.ads-manager-${CODER_USER}.tls.certresolver=le
+      - traefik.http.services.ads-manager-${CODER_USER}.loadbalancer.server.port=3000
+      - traefik.http.routers.ads-manager-${CODER_USER}.middlewares=mb-local@file
 
 networks:
   mb-edge:

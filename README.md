@@ -124,12 +124,21 @@ Set `CRON_SECRET` in Vercel Environment Variables to match `.env.local`.
 
 ## Deployment
 
-```bash
-# Build production
-npm run build
+Preview/staging uses Docker Compose with a named data volume. Set `APP_HOST` and `CODER_USER` in `.env` before starting the stack; preview containers use `mb.env=preview`, `mb.autostop=4`, and `restart: "no"`.
 
-# Start production server
-npm start
+```bash
+# Validate and start the preview stack
+APP_HOST=<preview-host> CODER_USER=<workspace-user> docker compose -p ads-manager-<workspace-user> up -d --build
+
+# View logs
+APP_HOST=<preview-host> CODER_USER=<workspace-user> docker compose -p ads-manager-<workspace-user> logs -f --tail=100
+
+# Start again after automatic stop; named volume is preserved
+APP_HOST=<preview-host> CODER_USER=<workspace-user> docker compose -p ads-manager-<workspace-user> up -d
+
+# Stop without deleting data
+APP_HOST=<preview-host> CODER_USER=<workspace-user> docker compose -p ads-manager-<workspace-user> stop
 ```
 
-Or deploy directly to [Vercel](https://vercel.com).
+For a local production build without Compose:
+
