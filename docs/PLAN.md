@@ -13,8 +13,9 @@
 - [x] Report matched/unmatched order and revenue counts/rates.
 - [x] Refuse MBI attribution where the business rule cannot separate it.
 - [x] Keep connector errors explicit; never interpret an empty report as zero revenue.
-- [ ] Add UTM/click/session evidence ingestion without inventing links Odoo does not store.
-- [ ] Add lead-to-order matching and duplicate prevention.
+- [x] Add an evidence-bounded lead-to-order matcher with click-ID, UTM campaign, and campaign-label precedence.
+- [x] Prevent duplicate order counting and leave ambiguous/no-evidence orders unmatched.
+- [ ] Add UTM/click/session evidence ingestion from the real event store.
 - [ ] Add runtime acceptance for matched/unmatched attribution.
 
 - Add `lib/forecast-quality.ts` around the existing spend forecaster.

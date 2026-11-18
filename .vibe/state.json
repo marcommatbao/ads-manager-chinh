@@ -17,7 +17,7 @@
       },
       "gate5": {
         "status": "in_progress",
-        "progress": 20,
+        "progress": 45,
         "completed": ["campaign-label attribution contract and match-rate tests"],
         "remaining": ["UTM/click/session evidence ingestion", "lead-to-order matching", "deduplication and unmatched acceptance"]
       },

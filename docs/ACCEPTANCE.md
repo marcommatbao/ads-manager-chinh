@@ -18,7 +18,9 @@
 - Campaign-label attribution contract: PASS.
 - Matched/unmatched order and revenue rates: PASS in `campaign-revenue-attribution.test.ts`.
 - MBI unsupported attribution and Odoo failure remain explicit/non-attributed: PASS.
-- UTM/click/session and lead-to-order runtime acceptance: PENDING.
+- Evidence-bounded lead-to-order matcher (click ID → UTM campaign → campaign label): PASS in `attribution-matcher.test.ts`.
+- Duplicate and ambiguous orders remain unmatched: PASS.
+- UTM/click/session ingestion from the real event store and runtime acceptance: PENDING.
 
 
 - Forecast quality contract tests: PASS.
