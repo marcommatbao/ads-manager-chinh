@@ -18,7 +18,8 @@
 - Evidence-backed profit contract: PASS in `profit-quality.test.ts`.
 - Missing COGS blocks profit/margin/break-even conclusions: PASS.
 - Mismatched component date ranges block calculation: PASS.
-- BA formula confirmation, real COGS/refund integration, and runtime acceptance: PENDING.
+- Authenticated profit readiness API returns explicit `insufficient` and missing source list: PASS in `profit-route.test.ts`.
+- BA formula confirmation, real COGS/refund integration, and populated runtime acceptance: PENDING.
 
 
 - Campaign-label attribution contract: PASS.

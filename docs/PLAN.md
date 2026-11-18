@@ -35,5 +35,6 @@
 - [x] Require common date range and source metadata for all components.
 - [x] Return `insufficient` when COGS or any required component is unavailable.
 - [ ] BA confirm business formulas and refund/COGS definitions.
-- [ ] Integrate real COGS/refund sources and expose authenticated API/UI.
+- [x] Expose authenticated profit readiness API; missing ledgers return explicit `insufficient` with missing source list.
+- [ ] Integrate real COGS/refund sources and expose populated profit API/UI.
 - [ ] Add runtime acceptance for profit calculations.
