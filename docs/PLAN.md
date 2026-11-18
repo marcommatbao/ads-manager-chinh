@@ -13,8 +13,7 @@
 - [x] Report matched/unmatched order and revenue counts/rates.
 - [x] Refuse MBI attribution where the business rule cannot separate it.
 - [x] Keep connector errors explicit; never interpret an empty report as zero revenue.
-- [x] Add an evidence-bounded lead-to-order matcher with click-ID, UTM campaign, and campaign-label precedence.
-- [x] Prevent duplicate order counting and leave ambiguous/no-evidence orders unmatched.
+- [x] Adapt normalized `LeadEvent` and `RealOrder` records without persisting identity fields.
 - [ ] Add UTM/click/session evidence ingestion from the real event store.
 - [ ] Add runtime acceptance for matched/unmatched attribution.
 

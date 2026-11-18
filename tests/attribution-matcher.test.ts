@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { matchLeadsToOrders } from "@/lib/attribution/matcher";
+import { leadEventEvidence, matchLeadsToOrders, realOrderEvidence } from "@/lib/attribution/matcher";
 
 describe("phase 5 lead to order matcher", () => {
+  it("adapts normalized lead and order store records without exposing identity fields", () => {
+    const report = matchLeadsToOrders(
+      [leadEventEvidence({ leadId: "lead-1", gclid: "gclid-1234567890" })],
+      [realOrderEvidence({ orderId: "order-1", key: "webhook-order-1", value: 500, gclid: "gclid-1234567890" })],
+    );
+    expect(report.matched[0]).toMatchObject({ leadId: "lead-1", method: "click_id", value: 500 });
+    expect(report.matched[0]).not.toHaveProperty("email");
+    expect(report.matched[0]).not.toHaveProperty("phone");
+  });
+
   it("prefers exact click evidence over weaker campaign evidence", () => {
     const report = matchLeadsToOrders(
       [

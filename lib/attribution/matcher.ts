@@ -50,6 +50,27 @@ export interface AttributionReport {
   matchedRevenueRate: number;
 }
 
+export function leadEventEvidence(event: { leadId: string; gclid?: string; gbraid?: string; wbraid?: string; utmCampaign?: string; campaignLabel?: string }): LeadAttributionEvidence {
+  return {
+    leadId: event.leadId,
+    clickIds: [event.gclid, event.gbraid, event.wbraid].filter((value): value is string => Boolean(value)),
+    utmCampaign: event.utmCampaign,
+    campaignLabel: event.campaignLabel,
+  };
+}
+
+export function realOrderEvidence(order: { orderId: string | number; key?: string; value: number; currency?: string; gclid?: string; gbraid?: string; wbraid?: string; utm?: { campaign?: string }; productGroup?: string }): OrderAttributionEvidence {
+  return {
+    orderId: order.orderId,
+    key: order.key,
+    value: order.value,
+    currency: order.currency,
+    clickIds: [order.gclid, order.gbraid, order.wbraid].filter((value): value is string => Boolean(value)),
+    utmCampaign: order.utm?.campaign,
+    campaignLabel: order.productGroup,
+  };
+}
+
 const clean = (value: unknown): string | null => {
   const text = typeof value === "string" ? value.trim().toLowerCase() : "";
   return text || null;

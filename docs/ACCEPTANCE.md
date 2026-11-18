@@ -20,6 +20,7 @@
 - MBI unsupported attribution and Odoo failure remain explicit/non-attributed: PASS.
 - Evidence-bounded lead-to-order matcher (click ID → UTM campaign → campaign label): PASS in `attribution-matcher.test.ts`.
 - Duplicate and ambiguous orders remain unmatched: PASS.
+- Normalized `LeadEvent`/`RealOrder` adapters avoid persisting identity fields: PASS.
 - UTM/click/session ingestion from the real event store and runtime acceptance: PENDING.
 
 
