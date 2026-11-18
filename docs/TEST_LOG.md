@@ -21,6 +21,8 @@ Date: 2026-11-18
 - Labels: `mb.env=preview`, `mb.owner=trieunt`, `mb.autostop=4`, `restart: no`.
 - HTTPS route: not verified; `ads-manager-trieunt.b.matbao.ai` did not resolve from the workspace.
 - Connector UAT: not available; preview `.env` contains only `AUTH_SECRET`, so Meta/Google/Gemini-dependent jobs return 503/disabled states.
+- Container black-box: `/login` returned HTTP 200 with HTML; `/api/health` returned HTTP 200 with `ok: true`.
+- Authenticated dashboard/evidence browser acceptance remains blocked by missing session/connector credentials and unresolved preview DNS; no AI-success claim is made.
 
 
 `npm run lint` is not green because the repository contains a pre-existing error in `app/(dashboard)/campaigns/page.tsx:382` (`no-explicit-any`), plus unrelated warnings. This Gate 3 work did not modify that location.
