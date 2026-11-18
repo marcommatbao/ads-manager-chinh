@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { BriefingEvidencePanel } from "@/components/briefing/BriefingEvidencePanel";
 import type { Campaign, ReportData, DashboardSummary } from "@/types/ads.types";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { forecastMonthlySpend, TREND_CONFIG, type SpendForecast } from "@/lib/spend-forecaster";
@@ -205,6 +206,17 @@ interface BriefingData {
   aiSummary: string;
   /** Nguồn dữ liệu lấy hụt — số trong bản tin đang thiếu phần đó. */
   dataGaps?: string[];
+  generationMode?: "gemini" | "fallback" | "blocked";
+  evidence?: Array<{
+    id: string;
+    source: string;
+    from: string;
+    to: string;
+    readAt: string;
+    status: "complete" | "partial" | "unavailable";
+    critical: boolean;
+    note?: string;
+  }>;
   yesterday: { totalSpend: number; roas: number; avgCTR: number; avgCPC: number };
   alerts: Array<{ severity: string; campaignName: string; description: string }>;
   topCampaigns: Array<{ name: string; roas: number | null; ctr: number; reason: string }>;
@@ -213,6 +225,11 @@ interface BriefingData {
 }
 
 function MorningBriefingCard() {
+  const BRIEFING_MODE_KEY = {
+    gemini: "overview.home.briefingModeGemini",
+    fallback: "overview.home.briefingModeFallback",
+    blocked: "overview.home.briefingModeBlocked",
+  } as const;
   const [briefing, setBriefing] = useState<BriefingData | null>(null);
   const [loading, setLoading] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -315,6 +332,15 @@ function MorningBriefingCard() {
           <div className="space-y-3">
             {/* AI Summary */}
             <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+              {briefing.generationMode && (
+                <div className={cn(
+                  "mb-2 inline-flex rounded-full px-2 py-1 text-[10px] font-semibold",
+                  briefing.generationMode === "blocked" ? "bg-red-100 text-red-700" :
+                    briefing.generationMode === "fallback" ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700",
+                )}>
+                  {t(BRIEFING_MODE_KEY[briefing.generationMode])}
+                </div>
+              )}
               {briefing.aiSummary}
               {/* Số 0 vì "không chạy gì" và số 0 vì "không lấy được" nhìn y
                   hệt nhau — nói ra để người đọc bản tin không kết luận nhầm. */}
@@ -324,6 +350,7 @@ function MorningBriefingCard() {
                   {briefing.dataGaps.length > 2 && ` … (+${briefing.dataGaps.length - 2})`}
                 </span>
               )}
+              {briefing.evidence && <BriefingEvidencePanel evidence={briefing.evidence} />}
             </div>
 
             {/* Quick stats bar */}
@@ -1672,11 +1699,8 @@ export default function DashboardPage() {
     <>
 
       {/* ── System banners ── */}
-      {/* "Báo cáo buổi sáng" (đánh giá AI hằng ngày) TẠM ẨN theo yêu cầu
-          17/09/2026. Bỏ ẩn = xoá cặp {false && } bên dưới. Component và API
-          (/api/automation/morning-briefing) vẫn còn nguyên, cron vẫn chạy —
-          chỉ là không hiện trên Dashboard. */}
-      {false && <MorningBriefingCard />}
+      {/* Báo cáo buổi sáng: hiển thị quality state và evidence của Giai đoạn 3. */}
+      <MorningBriefingCard />
       {hasModule("matbao") && <RevenueReminderBanner />}
       {tokenExpired && (
         <div className="rounded-xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-3 flex items-center justify-between mb-2">

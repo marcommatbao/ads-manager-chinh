@@ -38,8 +38,8 @@ export async function GET() {
       missedAt: missed?.toISOString() ?? null, status,
     }
   })
-  let connectors: { id: string; status: string; reason: string | null; lastChecked: string | null }[] = []
-  try { connectors = Object.entries(snapshotAllConnectors()).filter(([, r]) => !!r).map(([id, r]) => ({ id, status: r!.status, reason: r!.failureReason ?? null, lastChecked: r!.lastChecked ?? null })) } catch { /* hiện rỗng */ }
+  let connectors: { id: string; status: string; reason: string | null; failureCategory: string | null; configComplete: boolean; partialConfig: boolean; lastChecked: string | null; lastSuccess: string | null; lastFailure: string | null; needsRefresh: boolean }[] = []
+  try { connectors = Object.entries(snapshotAllConnectors()).filter(([, r]) => !!r).map(([id, r]) => ({ id, status: r!.status, reason: r!.failureReason ?? null, failureCategory: r!.failureCategory ?? null, configComplete: r!.configComplete, partialConfig: r!.partialConfig, lastChecked: r!.lastChecked ?? null, lastSuccess: r!.lastSuccess ?? null, lastFailure: r!.lastFailure ?? null, needsRefresh: !!r!.needsRefresh })) } catch { /* hiện rỗng */ }
   return NextResponse.json({
     success: true, now: now.toISOString(), bootAt: BOOT_AT.toISOString(), jobs, connectors,
     alertChannel: { teams: isTeamsAlertConfigured(), telegramDisabled: process.env.CONNECTOR_TELEGRAM_DISABLED === "1" },

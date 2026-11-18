@@ -22,6 +22,7 @@ export function ConnectorsTable({ connectors }: { connectors: HealthConnector[] 
               <TableHead>{t("overview.health.connectors.th.status")}</TableHead>
               <TableHead>{t("overview.health.connectors.th.reason")}</TableHead>
               <TableHead>{t("overview.health.connectors.th.lastChecked")}</TableHead>
+              <TableHead>{t("overview.health.connectors.th.lastSuccess")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -31,8 +32,12 @@ export function ConnectorsTable({ connectors }: { connectors: HealthConnector[] 
                 <TableRow key={c.id}>
                   <TableCell className="font-mono text-xs text-slate-700">{c.id}</TableCell>
                   <TableCell><Badge cls={meta.cls}>{t(meta.label)}</Badge></TableCell>
-                  <TableCell className="whitespace-normal max-w-[280px] text-xs text-slate-500">{c.reason ?? "—"}</TableCell>
+                  <TableCell className="text-xs text-slate-500">
+                    {c.reason ?? (c.configComplete ? t("overview.health.connectors.ready") : t("overview.health.connectors.notConfigured"))}
+                    {c.failureCategory && <span className="ml-1 text-[10px] text-slate-400">({c.failureCategory})</span>}
+                  </TableCell>
                   <TableCell className="text-xs text-slate-500">{absTime(c.lastChecked, intl)}</TableCell>
+                  <TableCell className="text-xs text-slate-500">{absTime(c.lastSuccess, intl)}</TableCell>
                 </TableRow>
               );
             })}

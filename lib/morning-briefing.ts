@@ -88,6 +88,25 @@ export interface MorningBriefing {
   /** Nguồn dữ liệu lấy hụt. Rỗng = số trong bản tin đầy đủ; có phần tử = các
    *  con số bên trên ĐANG THIẾU, không phải "hôm qua không chạy gì". */
   dataGaps: string[];
+
+  /** Dấu vết tối thiểu để mọi kết luận có thể kiểm tra lại. */
+  evidence: BriefingEvidence[];
+  generationMode: "gemini" | "fallback" | "blocked";
+}
+
+export interface BriefingEvidence {
+  id: string;
+  source: "meta" | "gemini" | "fallback";
+  from: string;
+  to: string;
+  readAt: string;
+  status: "complete" | "partial" | "unavailable";
+  critical: boolean;
+  note?: string;
+}
+
+export function shouldBlockAiAnalysis(evidence: BriefingEvidence[]): boolean {
+  return evidence.some((item) => item.source === "meta" && item.status === "unavailable" && item.critical);
 }
 
 // ─────────────────────────────────────────────
@@ -412,6 +431,11 @@ export async function generateMorningBriefing(): Promise<MorningBriefing> {
   // mà nuốt lỗi thì cả bản tin hiện số 0 (chi tiêu, lead, CPL) và người đọc
   // hiểu là "hôm qua không chạy gì", chứ không phải "không lấy được số".
   const dataGaps: string[] = [];
+  const evidence: BriefingEvidence[] = [];
+  const readAt = new Date().toISOString();
+  const addEvidence = (id: string, from: string, to: string, status: BriefingEvidence["status"], note?: string) => {
+    evidence.push({ id, source: "meta", from, to, readAt, status, critical: status === "unavailable", note });
+  };
   const noteGap = (label: string, err: unknown) => {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[MorningBriefing] ${label} lỗi:`, msg);
@@ -419,10 +443,22 @@ export async function generateMorningBriefing(): Promise<MorningBriefing> {
   };
 
   // 1. Fetch insights in parallel
+  const fetchPeriod = async (id: string, from: string, to: string) => {
+    try {
+      const rows = await metaClient.getAccountInsights({ from, to });
+      addEvidence(id, from, to, "complete");
+      return rows;
+    } catch (e) {
+      noteGap(id, e);
+      addEvidence(id, from, to, "unavailable", "Không lấy được dữ liệu nguồn");
+      return [];
+    }
+  };
+
   const [yesterdayInsights, last7dInsights, monthInsights] = await Promise.all([
-    metaClient.getAccountInsights({ from: yesterdayStr, to: yesterdayStr }).catch(e => { noteGap("số liệu hôm qua", e); return []; }),
-    metaClient.getAccountInsights({ from: last7dStart, to: yesterdayStr }).catch(e => { noteGap("số liệu 7 ngày", e); return []; }),
-    metaClient.getAccountInsights({ from: monthStart, to: yesterdayStr }).catch(e => { noteGap("số liệu tháng", e); return []; }),
+    fetchPeriod("số liệu hôm qua", yesterdayStr, yesterdayStr),
+    fetchPeriod("số liệu 7 ngày", last7dStart, yesterdayStr),
+    fetchPeriod("số liệu tháng", monthStart, yesterdayStr),
   ]);
 
   const yesterday = aggregateInsights(yesterdayInsights);
@@ -438,12 +474,22 @@ export async function generateMorningBriefing(): Promise<MorningBriefing> {
   // chặn/đang duyệt (đó mới thật sự là việc phải xử lý).
   const campaigns = await metaClient
     .getCampaigns({ status: ["ACTIVE", "WITH_ISSUES", "DISAPPROVED", "PENDING_REVIEW"] })
-    .catch(e => { noteGap("danh sách chiến dịch", e); return []; });
+    .then(rows => { addEvidence("danh sách chiến dịch", last7dStart, yesterdayStr, "complete"); return rows; })
+    .catch(e => {
+      noteGap("danh sách chiến dịch", e);
+      addEvidence("danh sách chiến dịch", last7dStart, yesterdayStr, "unavailable", "Không lấy được danh sách chiến dịch");
+      return [];
+    });
   const campaignIds = campaigns.map(c => c.id);
 
   let campaignMetrics: CampaignWithMetrics[] = [];
   if (campaignIds.length > 0) {
-    const insights = await metaClient.getCampaignInsights(campaignIds, { from: last7dStart, to: yesterdayStr }).catch(e => { noteGap("insights theo chiến dịch", e); return []; });
+    const insights = await metaClient.getCampaignInsights(campaignIds, { from: last7dStart, to: yesterdayStr }).then(rows => { addEvidence("insights theo chiến dịch", last7dStart, yesterdayStr, "complete"); return rows; })
+      .catch(e => {
+        noteGap("insights theo chiến dịch", e);
+        addEvidence("insights theo chiến dịch", last7dStart, yesterdayStr, "unavailable", "Không lấy được insights theo chiến dịch");
+        return [];
+      });
 
     campaignMetrics = campaigns.map(c => {
       const raw = insights.find(i => i.campaign_id === c.id);
@@ -523,8 +569,23 @@ export async function generateMorningBriefing(): Promise<MorningBriefing> {
 
   // 7. AI Summary via Gemini
   let aiSummary = "";
+  let aiSource: "gemini" | "fallback" | "blocked" = "fallback";
   const apiKey = process.env.GEMINI_API_KEY;
-  if (apiKey) {
+  const hasCriticalSourceFailure = shouldBlockAiAnalysis(evidence);
+  if (hasCriticalSourceFailure) {
+    aiSummary = "⚠️ Chưa thể phân tích AI: dữ liệu nguồn quan trọng đang lỗi hoặc chưa khả dụng. Kiểm tra Data Health trước khi ra quyết định.";
+    evidence.push({
+      id: "ai-summary",
+      source: "fallback",
+      from: monthStart,
+      to: yesterdayStr,
+      readAt: new Date().toISOString(),
+      status: "partial",
+      critical: true,
+      note: "Bị chặn vì nguồn dữ liệu quan trọng không đầy đủ",
+    });
+    aiSource = "blocked";
+  } else if (apiKey) {
     try {
       const prompt = buildBriefingPrompt({ today, yesterday, last7dAvg: last7d, alerts, anomalies, forecast, topCampaigns });
       const { result: geminiRes, timedOut } = await callWithTimeout(
@@ -537,6 +598,7 @@ export async function generateMorningBriefing(): Promise<MorningBriefing> {
       );
       if (!timedOut && geminiRes?.text) {
         aiSummary = geminiRes.text;
+        aiSource = "gemini";
       } else {
         console.warn("[MorningBriefing] Gemini timed out — using fallback");
         aiSummary = generateFallbackSummary(yesterday, last7d, alerts, anomalies, forecast);
@@ -549,11 +611,26 @@ export async function generateMorningBriefing(): Promise<MorningBriefing> {
     aiSummary = generateFallbackSummary(yesterday, last7d, alerts, anomalies, forecast);
   }
 
+  if (aiSource !== "blocked") {
+    evidence.push({
+      id: "ai-summary",
+      source: aiSource,
+      from: monthStart,
+      to: yesterdayStr,
+      readAt: new Date().toISOString(),
+      status: "complete",
+      critical: false,
+      note: aiSource === "fallback" ? "Bản rút gọn từ số liệu thô, không qua AI" : undefined,
+    });
+  }
+
   return {
     date: today,
     generatedAt: new Date().toISOString(),
     currency,
     dataGaps,
+    evidence,
+    generationMode: aiSource,
     yesterday,
     last7dAvg: {
       ...last7d,

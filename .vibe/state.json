@@ -1,0 +1,25 @@
+{
+  "project": "ads-manager",
+  "team": "mk",
+  "template": "existing-nextjs",
+  "currentPhase": "productization",
+  "updatedAt": "2026-11-18",
+  "phases": {
+    "discovery": { "status": "completed" },
+    "gate1": { "status": "completed_or_existing" },
+    "productization": {
+      "status": "in_progress",
+      "gate3": {
+        "status": "in_progress",
+        "progress": 80,
+        "remaining": [
+          "route integration tests with Gemini call-count assertion",
+          "authenticated staging/browser acceptance evidence",
+          "resolve pre-existing repository lint error"
+        ]
+      }
+    },
+    "gate2": { "status": "not_started" },
+    "production": { "status": "not_started" }
+  }
+}

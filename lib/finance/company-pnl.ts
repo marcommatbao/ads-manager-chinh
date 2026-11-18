@@ -7,6 +7,8 @@
 // Chi phí gán theo prefix tên campaign (đã thống nhất).
 // ============================================================
 
+import { real, unavailable, type DataTruth } from "@/lib/data-truth";
+
 import { gatherCampaignsWithStatus } from "@/lib/nba/gather";
 import { detectCompany, platformOf } from "@/lib/nba/collectors/helpers";
 import { getManualSpendForMonth, type MonthManualSpend, type ManualCompany } from "./manual-spend";
@@ -175,6 +177,42 @@ async function postJson<T>(path: string, body: unknown): Promise<FetchResult<T>>
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "network error" };
   }
+}
+
+export async function fetchMbcRevenueTruth(
+  isoFrom: string,
+  isoTo: string,
+): Promise<{ revenue: DataTruth<number>; orders: DataTruth<number> }> {
+  const range = { from: isoFrom.slice(0, 10), to: isoTo.slice(0, 10) };
+  const r = await postJson<{ data: { totalCount: number; totalRevenue: number } }>(
+    "/api/Report/count-revenue", { ...MBC_REVENUE_FILTER, dateFrom: isoFrom, dateTo: isoTo }
+  );
+  if (!r.ok) return {
+    revenue: unavailable("Odoo Report API", r.error, range),
+    orders: unavailable("Odoo Report API", r.error, range),
+  };
+  const value = r.value?.data;
+  if (!value) return {
+    revenue: unavailable("Odoo Report API", "Response thiếu data", range),
+    orders: unavailable("Odoo Report API", "Response thiếu data", range),
+  };
+  return {
+    revenue: real(value.totalRevenue ?? 0, "Odoo Report API", range),
+    orders: real(value.totalCount ?? 0, "Odoo Report API", range),
+  };
+}
+
+export async function fetchMbiOrdersTruth(
+  isoFrom: string,
+  isoTo: string,
+): Promise<DataTruth<number>> {
+  const range = { from: isoFrom.slice(0, 10), to: isoTo.slice(0, 10) };
+  const r = await postJson<{ data: number }>(
+    "/api/Report/count-sale-order-paid", { ...MBI_ORDER_FILTER, dateOrderFrom: isoFrom, dateOrderTo: isoTo }
+  );
+  if (!r.ok) return unavailable("Odoo Report API", r.error, range);
+  if (typeof r.value?.data !== "number") return unavailable("Odoo Report API", "Response thiếu data", range);
+  return real(r.value.data, "Odoo Report API", range);
 }
 
 /** Xuất riêng: /api/dashboard/unified dùng hàm này để lấy doanh thu MBC THẬT

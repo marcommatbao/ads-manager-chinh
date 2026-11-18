@@ -59,7 +59,13 @@ export interface HealthConnector {
   id: string;
   status: ConnectorHealthStatus;
   reason: string | null;
+  failureCategory: string | null;
+  configComplete: boolean;
+  partialConfig: boolean;
   lastChecked: string | null;
+  lastSuccess: string | null;
+  lastFailure: string | null;
+  needsRefresh: boolean;
 }
 
 export interface HealthAlertChannel {

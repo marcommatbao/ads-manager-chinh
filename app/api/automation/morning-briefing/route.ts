@@ -23,6 +23,7 @@ import {
   setCachedBriefing,
 } from "@/lib/morning-briefing";
 import { friendlyError } from "@/lib/not-configured";
+import { saveBriefing } from "@/lib/morning-briefing-history";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -44,6 +45,13 @@ async function build(force: boolean) {
   }
   const fresh = await generateMorningBriefing();
   setCachedBriefing(fresh);
+  // Lưu lịch sử là phần gate Giai đoạn 3; lỗi ghi file không được làm hỏng
+  // bản tin đang hiển thị, nhưng phải để lại log để phát hiện.
+  try {
+    await saveBriefing(fresh);
+  } catch (err) {
+    console.error("[automation/morning-briefing] lưu lịch sử lỗi:", err);
+  }
   return { data: fresh, cached: false };
 }
 
