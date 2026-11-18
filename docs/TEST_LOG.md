@@ -8,7 +8,11 @@ Date: 2026-11-18
 - `npx vitest run tests/morning-briefing-quality.test.ts tests/morning-briefing-history.test.ts tests/data-truth.test.ts tests/company-pnl-truth.test.ts --reporter=dot` — PASS (4 files, 9 tests)
 - `git diff --check` — PASS
 
-## Known repository check
+## Route integration checks
+
+- `tests/morning-briefing-history-route.test.ts` — PASS (3 tests): unauthenticated request returns 401, authenticated history response is returned, invalid limit falls back to 30.
+- Critical Meta unavailable → Gemini call-count integration remains pending because the current generator couples live provider clients to the route and requires a provider mock seam.
+
 
 `npm run lint` is not green because the repository contains a pre-existing error in `app/(dashboard)/campaigns/page.tsx:382` (`no-explicit-any`), plus unrelated warnings. This Gate 3 work did not modify that location.
 

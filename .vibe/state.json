@@ -11,7 +11,7 @@
       "status": "in_progress",
       "gate3": {
         "status": "in_progress",
-        "progress": 80,
+        "progress": 85,
         "remaining": [
           "route integration tests with Gemini call-count assertion",
           "authenticated staging/browser acceptance evidence",
