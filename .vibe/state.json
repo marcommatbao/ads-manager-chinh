@@ -9,6 +9,12 @@
     "gate1": { "status": "completed_or_existing" },
     "productization": {
       "status": "in_progress",
+      "gate4": {
+        "status": "in_progress",
+        "progress": 20,
+        "completed": ["forecast quality contract and minimum-data tests"],
+        "remaining": ["wire contract into budget-pacing APIs and UI", "source-specific integration tests", "account balance/campaign budget/KPI acceptance"]
+      },
       "gate3": {
         "status": "in_progress",
         "progress": 85,
