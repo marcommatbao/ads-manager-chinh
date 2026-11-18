@@ -18,8 +18,8 @@
       "gate5": {
         "status": "in_progress",
         "progress": 75,
-        "completed": ["campaign-label attribution contract and match-rate tests"],
-        "remaining": ["UTM/click/session evidence ingestion", "lead-to-order matching", "deduplication and unmatched acceptance"]
+        "completed": ["campaign-label attribution contract and match-rate tests", "event-store lead/order matcher", "deduplication and unmatched safeguards", "authenticated attribution report API"],
+        "remaining": ["runtime acceptance with staging event stores"]
       },
       "gate3": {
         "status": "in_progress",

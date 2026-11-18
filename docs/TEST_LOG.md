@@ -6,7 +6,7 @@ Date: 2026-11-18
 
 - `npx tsc --noEmit --pretty false` — PASS
 - `npx vitest run tests/morning-briefing-quality.test.ts tests/morning-briefing-history.test.ts tests/data-truth.test.ts tests/company-pnl-truth.test.ts --reporter=dot` — PASS (4 files, 9 tests)
-- `git diff --check` — PASS
+- `npx vitest run` focused Gate 3/4/5 suite — PASS (11 files, 30 tests); Vitest excludes `.next/**` to prevent built standalone test copies from sharing file-backed fixtures.
 
 - `npm run build` with Next.js 16.4.6 — PASS (optimized production build compiled successfully; existing middleware deprecation warning remains).
 
