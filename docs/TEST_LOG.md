@@ -6,7 +6,9 @@ Date: 2026-11-18
 
 - `npx tsc --noEmit --pretty false` — PASS
 - `npx vitest run tests/morning-briefing-quality.test.ts tests/morning-briefing-history.test.ts tests/data-truth.test.ts tests/company-pnl-truth.test.ts --reporter=dot` — PASS (4 files, 9 tests)
-- `npx vitest run` source-only after excluding `.next/**` and `.claude/**` — PASS (13 files, 36 tests; 71 live fixtures skipped).
+- Middleware migrated from `middleware.ts` to `proxy.ts`; Next.js 16.4.6 production build and route generation PASS. Deprecation warning removed.
+- `npm install -D vitest@5.1.1` was intentionally not applied: npm peer resolution requires `@types/node >=22`, while the project remains on Node types 20; no force/legacy-peer override used.
+- Remaining dependency audit: 4 critical / 22 high; critical paths include `protobufjs`, `proxy-addr`, and Vitest/tinypool. Public deployment remains blocked pending a compatibility-reviewed upgrade plan.
 - `npx tsc --noEmit --pretty false` — PASS.
 - `npm run build` with Next.js 16.4.6 — PASS (optimized production build and route generation completed; middleware deprecation warning remains).
 

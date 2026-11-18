@@ -15,8 +15,6 @@ import { moduleOfApi, moduleOfPage } from "@/lib/companies/modules";
 import { pageAllowedDuringSetup, setupPending } from "@/lib/setup/state";
 
 // Run in Node.js runtime so we can use crypto for full JWT signature verification
-export const runtime = "nodejs";
-
 // Auth pages that don't need login
 const AUTH_PAGES = ["/login", "/register"];
 
@@ -24,7 +22,7 @@ const AUTH_PAGES = ["/login", "/register"];
 const CHANGE_PASSWORD_PAGE = "/doi-mat-khau";
 const API_ALLOWED_BEFORE_PASSWORD_CHANGE = ["/api/auth", "/api/companies"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ── /api: chỉ chặn CSRF (xác thực vẫn do từng route tự làm) ──
