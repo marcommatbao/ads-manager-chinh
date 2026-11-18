@@ -13,8 +13,7 @@
 - [x] Report matched/unmatched order and revenue counts/rates.
 - [x] Refuse MBI attribution where the business rule cannot separate it.
 - [x] Keep connector errors explicit; never interpret an empty report as zero revenue.
-- [x] Adapt normalized `LeadEvent` and `RealOrder` records without persisting identity fields.
-- [ ] Add UTM/click/session evidence ingestion from the real event store.
+- [x] Build authenticated attribution report API with company scope and date validation.
 - [ ] Add runtime acceptance for matched/unmatched attribution.
 
 - Add `lib/forecast-quality.ts` around the existing spend forecaster.

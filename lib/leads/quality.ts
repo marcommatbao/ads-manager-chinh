@@ -115,6 +115,8 @@ export function toLeadEvent(x: LeadEventInput, source: LeadEvent["source"], now 
 }
 
 function readEvents(co: Company): LeadEvent[] { try { return JSON.parse(fs.readFileSync(eventsFile(co), "utf-8")) as LeadEvent[] } catch { return [] } }
+export function readLeadEvents(co: Company): LeadEvent[] { return readEvents(co) }
+
 
 /** Nhận lô sự kiện; trùng (cùng lead + giai đoạn) thì bỏ qua — Google cũng chống trùng theo order_id. */
 export async function ingestEvents(co: Company, inputs: LeadEventInput[], source: LeadEvent["source"]): Promise<{ accepted: number; duplicates: number; errors: string[] }> {
