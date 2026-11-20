@@ -464,3 +464,41 @@ Ngoài tất cả điều trên:
 - BA/Manager duyệt policy.
 - Gate 2 production readiness pass.
 - Có kế hoạch dừng/rollback và người chịu trách nhiệm.
+
+---
+
+# Marketing Capability Layer — upstream skill adaptation
+
+## Source and license
+
+Capability categories are informed by `coreyhaines31/marketingskills` (MIT, Copyright (c) 2025 Corey Haines). See `docs/marketing-playbooks/THIRD-PARTY-NOTICE.md`. Upstream content is not copied into the provider decision path.
+
+## P0 — integrate first
+
+1. `product-marketing` → Business Policy/Profile: products, USP, audience, prohibited claims, targets, protected campaigns.
+2. `ads` → deterministic campaign planning and diagnosis checklist over Meta/Google source snapshots.
+3. `analytics` → metric definitions, source freshness, zero/unavailable/partial checks.
+4. `conversion-tracking` → UTM/gclid/gbraid/wbraid, pixel, GA4 and tracking health.
+5. `attribution` → existing evidence-bounded campaign→order report and coverage guard.
+
+P0 outputs are checklists/source contracts; they cannot call provider mutation clients.
+
+## P1 — add after P0
+
+1. `ad-creative` → creative identity/version, hook/angle/limits/fatigue review.
+2. `ab-testing` → comparable windows, minimum sample, before/after evidence; no causal claim without design.
+3. `marketing-loops` → scheduled health/report loops with deduped notifications and audit.
+
+## P2 — later product surfaces
+
+- `cro`, `copy-editing`, `copywriting` for landing/copy recommendations.
+- `seo-audit`, `schema`, `content-strategy` for separate SEO/content surfaces.
+- Other upstream skills only when a product request and owner exist.
+
+## Marketing capability guardrails
+
+- Playbooks never choose budget, campaign, provider action, or profit conclusion.
+- Deterministic evaluator remains the only automation decision path.
+- Copy/creative output requires human review before publication.
+- Missing tracking evidence blocks attribution/profit automation.
+- Every playbook has source/version/scope and no secret.
