@@ -256,3 +256,33 @@ Lead/opportunity, COGS/refund riêng không bắt buộc cho phạm vi doanh thu
 - Chưa commit/push/deploy nhóm observation hiện tại. Provider mutation/undo/retry không được bật; live collector business evidence vẫn chưa đủ để cấp approval thật.
 
 Production build cuối nhóm observation/provenance PASS (exit 0, job bchxyag0o). Release không kích hoạt apply; kiểm live chỉ đọc sau deploy.
+
+## Thu thập snapshot — thời gian và runtime Google
+
+- Local timing hardening: readAt/TTL neo vào lần đọc đầu; collectedAt + collectionDurationMs ghi thời điểm hoàn tất. Collection >=15 phút hoặc clock không hợp lệ bị từ chối; không gia hạn TTL bằng lời gọi cuối. Chưa deploy thay đổi timing này.
+- Verification local: 37 files / 159 tests PASS; TypeScript/scoped lint PASS. Build timing đang chạy.
+- Website hiện tại sau cập nhật OAuth: đọc campaigns MBC HTTP 200, chọn 1 campaign thuộc response, đọc snapshot kỳ 2 ngày HTTP 200; registry saved, currency VND, campaign_daily_budget, observedDays=0, approvable=false. Không dump metrics/account hoặc tạo approval/budget mutation. Đây là acceptance collector read-only giới hạn, không xác nhận learning/attribution/profit.
+- Còn lại: binding nguồn KPI/attribution campaign-level và learning authoritative; không dùng KPI company thay ROAS hòa vốn. Chưa live Meta acceptance hoặc full provider mutation.
+
+## Acceptance Google có chi tiêu và consistency
+
+- Live bounded read: chọn campaign ACTIVE có spend >0 từ API company-scoped cho MBC và MBI, kỳ 7 ngày kết thúc hôm qua; mỗi company tối đa 1 snapshot. Cả hai HTTP 200, registry saved, observedDays=7, spend dương và khớp campaign response trong 1 đơn vị currency; VND/campaign_daily_budget/approvable=false. Không dump metrics/names/account hoặc tạo approval/budget mutation.
+- Local tiếp theo: Google snapshot lưu spendConsistency matched/mismatch giữa tổng daily và tổng kỳ; lệch >1 micro-unit được ghi explicit missingSources daily_period_spend_mismatch, không âm thầm thay dữ liệu. Duplicate daily dates bị từ chối.
+- TypeScript/scoped lint PASS, 37 files / 161 tests PASS. Timing+consistency build đang chạy; chưa commit/push/deploy nhóm mới.
+
+## Ước lượng tiến độ automation theo deliverable (không phải KPI đo thực tế)
+
+Đánh giá phạm vi automation supervised, chưa bao gồm full-auto/profit/creative/SEO: khoảng 60%, ước lượng lập kế hoạch tại thời điểm này. Mỗi nhóm trọng số bằng nhau 10%, chấm theo các điều kiện còn thiếu; không phải xác nhận production-ready.
+
+1. Policy/settings: 80% — Draft OFF/live readback có; approval/activation và policy đa tầng còn thiếu.
+2. Collector/registry/freshness: 80% — scope/TTL và Google live positive-spend có; Meta live/unit/business sources chưa đủ.
+3. Evaluator/evidence business: 45% — simulation/block guards có; decision actionable từ KPI/attribution/learning còn thiếu.
+4. Approval lifecycle: 75% — server ID/hash/TTL/revoke/claim có; expiry/revision UI và ràng buộc runtime hoàn chỉnh còn thiếu.
+5. Execution concurrency/quota: 50% — reservation một process có; đa process/shared budget/daily delta cap còn thiếu.
+6. Reconciliation: 70% — helper/store/API/form + fixture có; observation live và lịch sử chi tiết còn thiếu.
+7. Automation UI: 70% — history/snapshot/approval có; action queue đầy đủ và business source explanation còn thiếu.
+8. Provider adapter/undo: 25% — existing legacy clients/routes + mock orchestration có; unified staging apply/readback/undo chưa đạt.
+9. Monitoring/outcome: 30% — job/outcome nền cũ có; integration mới 3/7 ngày/dedup chưa đủ.
+10. Release/security/runtime: 75% — dependency high/critical=0, build/runtime packaging và settings/browser verified; chưa provider write/rollback acceptance, còn moderate advisories.
+
+Tổng điểm có trọng số bằng nhau = 60%. Ưu tiên kế tiếp: deploy timing/consistency → UI evidence source gaps → decision actionable non-profit khi có business policy/learning nguồn thật → approval + provider staging acceptance. Không cần COGS để đóng read-only revenue/order/pacing; profit optimization tách riêng.

@@ -11,18 +11,18 @@ afterEach(() => vi.unstubAllEnvs());
 describe("Meta scoped read snapshot", () => {
  it("keeps minor units and does not expose token or assume zero spend", async () => {
   m.graphFetch.mockResolvedValueOnce(reply(campaign)).mockResolvedValueOnce(reply({ id: "act_999", currency: "VND", timezone_name: "Asia/Ho_Chi_Minh" })).mockResolvedValueOnce(reply({ data: [] }));
-  const snapshot = await collectMetaCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now);
+  const snapshot = await collectMetaCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now, () => now);
   expect(snapshot).toMatchObject({ provider: "meta", dailyBudgetMinorUnits: 100000, spend: null, observedDays: 0, approvable: false });
   expect(JSON.stringify(snapshot)).not.toContain("fixture-secret");
   for (const [url, options] of m.graphFetch.mock.calls) { expect(url).not.toContain("fixture-secret"); expect(options.headers.Authorization).toBe("Bearer fixture-secret"); }
  });
  it.each([{ ...campaign, account_id: "666" }, { ...campaign, name: "MBI - fixture" }, { ...campaign, name: "unknown" }])("rejects mismatched or unknown scope before reading insights", async row => {
   m.graphFetch.mockResolvedValueOnce(reply(row));
-  await expect(collectMetaCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now)).rejects.toThrow("SNAPSHOT_SCOPE_MISMATCH");
+  await expect(collectMetaCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now, () => now)).rejects.toThrow("SNAPSHOT_SCOPE_MISMATCH");
   expect(m.graphFetch).toHaveBeenCalledTimes(1);
  });
  it("rejects paginated incomplete insights", async () => {
   m.graphFetch.mockResolvedValueOnce(reply(campaign)).mockResolvedValueOnce(reply({ id: "999", currency: "VND", timezone_name: "Asia/Ho_Chi_Minh" })).mockResolvedValueOnce(reply({ data: [], paging: { next: "fixture" } }));
-  await expect(collectMetaCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now)).rejects.toThrow("INCOMPLETE_PROVIDER_SNAPSHOT");
+  await expect(collectMetaCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now, () => now)).rejects.toThrow("INCOMPLETE_PROVIDER_SNAPSHOT");
  });
 });

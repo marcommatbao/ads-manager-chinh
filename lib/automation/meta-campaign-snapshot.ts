@@ -1,10 +1,11 @@
 import crypto from "node:crypto";
+import { snapshotCollectionWindow } from "./snapshot-window";
 import { graphFetch } from "@/lib/meta-client";
 import { META_GRAPH_BASE } from "@/lib/meta/graph-version";
 import { allCompanyDefs } from "@/lib/companies/registry";
 
 /** Read-only collector. Unknown/ambiguous company names fail closed (no MBC fallback). */
-export async function collectMetaCampaignSnapshot(company: string, campaignId: string, from: string, to: string, now = new Date()) {
+export async function collectMetaCampaignSnapshot(company: string, campaignId: string, from: string, to: string, now = new Date(), completedAt: () => Date = () => new Date()) {
   const validDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v;
   if (!/^\d{1,25}$/.test(campaignId)) throw new Error("INVALID_CAMPAIGN_ID");
   if (!validDate(from) || !validDate(to) || from > to || Date.parse(to) - Date.parse(from) > 90 * 86400000 || to > now.toISOString().slice(0, 10)) throw new Error("INVALID_SNAPSHOT_RANGE");
@@ -45,7 +46,7 @@ export async function collectMetaCampaignSnapshot(company: string, campaignId: s
     budgetKind: campaign.daily_budget !== undefined ? "campaign_daily_budget_minor_units" : "adset_or_lifetime_budget",
     dailyBudgetMinorUnits: campaign.daily_budget !== undefined ? numeric(campaign.daily_budget) : null,
     spend: dates.size ? spend : null, observedDays: dates.size, from, to,
-    readAt: now.toISOString(), expiresAt: new Date(now.getTime() + 15 * 60000).toISOString(), approvable: false,
+    ...snapshotCollectionWindow(now, completedAt()), approvable: false,
     missingSources: ["campaign_attributed_revenue", "approved_break_even_roas", "campaign_attribution_coverage", "verified_learning_status", "verified_budget_currency_unit"],
   };
   return { ...base, snapshotId: crypto.createHash("sha256").update(JSON.stringify(base)).digest("hex") };

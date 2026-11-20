@@ -7,24 +7,36 @@ const row = { customer: { id: "1112223333", currency_code: "VND", time_zone: "As
 describe("read-only Google campaign snapshot", () => {
  beforeEach(() => { vi.resetAllMocks(); m.getGoogleAdsCustomer.mockReturnValue({ query: m.query }); });
  it("preserves currency, micros, scope and observed dates without authorizing apply", async () => {
-  m.query.mockResolvedValueOnce([row]).mockResolvedValueOnce([{ campaign: { id: "123" }, segments: { date: "2026-11-10" }, metrics: { cost_micros: 0 } }]);
-  const result = await collectGoogleCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now);
+  m.query.mockResolvedValueOnce([row]).mockResolvedValueOnce([{ campaign: { id: "123" }, segments: { date: "2026-11-10" }, metrics: { cost_micros: 250000000 } }]);
+  const result = await collectGoogleCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now, () => now);
   expect(m.getGoogleAdsCustomer).toHaveBeenCalledWith("MBC");
   expect(result).toMatchObject({ accountId: "1112223333", dailyBudget: 1000, spend: 250, platformConversionValue: 400, observedDays: 1, approvable: false, expiresAt: "2026-11-20T00:15:00.000Z" });
   expect(result.snapshotId).toHaveLength(64);
  });
+ it("keeps a mismatch explicit when provider totals changed between queries", async () => {
+  m.query.mockResolvedValueOnce([row]).mockResolvedValueOnce([{ campaign: { id: "123" }, segments: { date: "2026-11-10" }, metrics: { cost_micros: 100000000 } }]);
+  const result = await collectGoogleCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now, () => now);
+  expect(result.spendConsistency).toMatchObject({ status: "mismatch", dailyTotal: 100, periodTotal: 250 });
+  expect(result.missingSources).toContain("daily_period_spend_mismatch");
+  expect(result.approvable).toBe(false);
+ });
+ it("rejects duplicate days instead of silently counting them once", async () => {
+  const daily = { campaign: { id: "123" }, segments: { date: "2026-11-10" }, metrics: { cost_micros: 125000000 } };
+  m.query.mockResolvedValueOnce([row]).mockResolvedValueOnce([daily, daily]);
+  await expect(collectGoogleCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now, () => now)).rejects.toThrow("INVALID_PROVIDER_SNAPSHOT");
+ });
  it("rejects another account in the provider response", async () => {
   m.query.mockResolvedValueOnce([{ ...row, customer: { ...row.customer, id: "999" } }]);
-  await expect(collectGoogleCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now)).rejects.toThrow("SNAPSHOT_SCOPE_MISMATCH");
+  await expect(collectGoogleCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now, () => now)).rejects.toThrow("SNAPSHOT_SCOPE_MISMATCH");
   expect(m.query).toHaveBeenCalledTimes(1);
  });
  it("rejects invalid dates and unknown company before provider calls", async () => {
-  await expect(collectGoogleCampaignSnapshot("MBC", "123", "2026-02-30", "2026-11-19", now)).rejects.toThrow("INVALID_SNAPSHOT_RANGE");
-  await expect(collectGoogleCampaignSnapshot("UNKNOWN", "123", "2026-11-01", "2026-11-19", now)).rejects.toThrow("ACCOUNT_NOT_CONFIGURED");
+  await expect(collectGoogleCampaignSnapshot("MBC", "123", "2026-02-30", "2026-11-19", now, () => now)).rejects.toThrow("INVALID_SNAPSHOT_RANGE");
+  await expect(collectGoogleCampaignSnapshot("UNKNOWN", "123", "2026-11-01", "2026-11-19", now, () => now)).rejects.toThrow("ACCOUNT_NOT_CONFIGURED");
   expect(m.getGoogleAdsCustomer).not.toHaveBeenCalled();
  });
  it("rejects missing cost instead of turning it into zero", async () => {
   m.query.mockResolvedValueOnce([{ ...row, metrics: { conversions_value: 400 } }]).mockResolvedValueOnce([]);
-  await expect(collectGoogleCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now)).rejects.toThrow();
+  await expect(collectGoogleCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now, () => now)).rejects.toThrow();
  });
 });

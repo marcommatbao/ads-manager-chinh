@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { snapshotCollectionWindow } from "./snapshot-window";
 import { getGoogleAdsCustomer, GOOGLE_CUSTOMER_IDS } from "@/lib/google-ads-client";
 
 export interface CampaignReadSnapshot {
@@ -16,9 +17,12 @@ export interface CampaignReadSnapshot {
   spend: number;
   platformConversionValue: number;
   observedDays: number;
+  spendConsistency: { status: "matched" | "mismatch"; dailyTotal: number; periodTotal: number };
   from: string;
   to: string;
   readAt: string;
+  collectedAt: string;
+  collectionDurationMs: number;
   expiresAt: string;
   approvable: false;
   missingSources: string[];
@@ -39,7 +43,7 @@ const numeric = (value: unknown): number => {
 };
 
 /** Read-only. Company must be authorized by the route BEFORE calling this collector. */
-export async function collectGoogleCampaignSnapshot(company: string, campaignId: string, from: string, to: string, now = new Date()): Promise<CampaignReadSnapshot> {
+export async function collectGoogleCampaignSnapshot(company: string, campaignId: string, from: string, to: string, now = new Date(), completedAt: () => Date = () => new Date()): Promise<CampaignReadSnapshot> {
   if (!/^\d{1,25}$/.test(campaignId)) throw new Error("INVALID_CAMPAIGN_ID");
   const validDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
   if (!validDate(from) || !validDate(to) || from > to || Date.parse(to) - Date.parse(from) > 90 * 86400000 || to > now.toISOString().slice(0, 10)) throw new Error("INVALID_SNAPSHOT_RANGE");
@@ -65,25 +69,28 @@ export async function collectGoogleCampaignSnapshot(company: string, campaignId:
       AND segments.date BETWEEN '${from}' AND '${to}'
   `) as Row[];
   const dates = new Set<string>();
+  let dailyMicros = 0;
   for (const daily of dailyRows) {
     const date = String(daily.segments?.date ?? "");
-    if (String(daily.campaign?.id) !== campaignId || !validDate(date) || date < from || date > to) throw new Error("INVALID_PROVIDER_SNAPSHOT");
-    numeric(daily.metrics?.cost_micros);
+    if (String(daily.campaign?.id) !== campaignId || !validDate(date) || date < from || date > to || dates.has(date)) throw new Error("INVALID_PROVIDER_SNAPSHOT");
+    dailyMicros += numeric(daily.metrics?.cost_micros);
     dates.add(date);
   }
-  const readAt = now.toISOString();
+  const periodMicros = numeric(row.metrics?.cost_micros);
+  const spendMatched = Math.abs(dailyMicros - periodMicros) <= 1; // one micro-unit rounding tolerance
+  const window = snapshotCollectionWindow(now, completedAt());
   const base = {
     provider: "google" as const, company, accountId, campaignId,
     name: String(row.campaign?.name ?? campaignId), currency: row.customer.currency_code,
     timeZone: row.customer.time_zone, status: String(row.campaign?.status),
     budgetKind: row.campaign_budget.explicitly_shared ? "shared_budget" as const : "campaign_daily_budget" as const,
     dailyBudget: numeric(row.campaign_budget.amount_micros) / 1e6,
-    spend: numeric(row.metrics?.cost_micros) / 1e6,
+    spend: periodMicros / 1e6,
+    spendConsistency: { status: spendMatched ? "matched" as const : "mismatch" as const, dailyTotal: dailyMicros / 1e6, periodTotal: periodMicros / 1e6 },
     platformConversionValue: numeric(row.metrics?.conversions_value),
-    observedDays: dates.size, from, to, readAt,
-    expiresAt: new Date(now.getTime() + 15 * 60000).toISOString(),
+    observedDays: dates.size, from, to, ...window,
     approvable: false as const,
-    missingSources: ["campaign_attributed_revenue", "approved_break_even_roas", "campaign_attribution_coverage", "verified_learning_status"],
+    missingSources: ["campaign_attributed_revenue", "approved_break_even_roas", "campaign_attribution_coverage", "verified_learning_status", ...(!spendMatched ? ["daily_period_spend_mismatch"] : [])],
   };
   return { ...base, snapshotId: crypto.createHash("sha256").update(JSON.stringify(base)).digest("hex") };
 }
