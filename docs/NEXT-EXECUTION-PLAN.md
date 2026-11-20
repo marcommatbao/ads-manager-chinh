@@ -206,3 +206,21 @@ Lead/opportunity, COGS/refund riêng không bắt buộc cho phạm vi doanh thu
 - Artifact tạm: /tmp/ads-snapshot-browser/mobile.png. Đây chưa phải backend/provider live acceptance hay full Next routing/screen reader.
 - Deploy lịch sử 7b925b0, version 23: FAILED do build vượt 12 phút. Trang lịch sử/panel snapshot chưa được xác nhận live. Host diagnose lỗi HTTP 410; raw logs chỉ có timeout, chưa có substep để kết luận nguyên nhân. Không tạo deploy chồng hoặc tự tăng RAM/timeout.
 - Kế tiếp cần điều tra đường build host và kiểm khả năng source/image trace trước khi redeploy. Cần Ops cung cấp log npm/Next/Docker từng bước nếu nền tảng không trả được; phần runtime app cũ giữ nguyên.
+
+## Approval lifecycle — bước tiếp sau rollout snapshot
+
+- Deploy c57377b succeeded (job cmwp1vkut2jb50i5fm9svnlwy). Live authenticated `/api/automation/decisions` 200 JSON; history/snapshot panels visible, mobile 375px no overflow, 0 page errors; no provider snapshot submitted in acceptance.
+- New local work: approval summary GET and revoke DELETE `/api/automation/approvals`, restricted to super_admin and authorized companies. Projection excludes raw decision, account, snapshot hash, secret and provider error text.
+- Revocation only allowed for unexpired approved rows; records revokedAt/revokedBy from server actor in same durable approval record. Consumed work cannot be revoked/reopened and stays needs_reconciliation when no outcome exists. Expiry is computed on read without changing consumed status.
+- Revoke/claim serialized under process-local store lock, exactly one winner in race test. No multi-process safety claim, no auto-release of quota reservation and no provider mutation endpoint enabled.
+- Verification: TypeScript/scoped lint PASS, 33 files / 140 source tests PASS. Production build pending; lifecycle UI not yet implemented or tested in browser.
+- Next: approval lifecycle UI with confirmation/reason/conflict states; expiry/revocation policy-version invalidation presentation and read-only reconciliation; real provider adapters require business evidence and explicit test campaign scope.
+
+## Giao diện xem/thu hồi approval
+
+- ApprovalLifecyclePanel nằm trong `/automation/decisions`, chỉ hiển thị cho session super_admin; backend vẫn tự kiểm role/company.
+- Hiển thị approved/expired/consumed/revoked và needs_reconciliation. Không có nút approve/apply hoặc hoàn tác budget.
+- Thu hồi cần Dialog xác nhận company/campaign/approval ID; Hủy/Escape không gửi DELETE. Trạng thái đang gửi vô hiệu các thao tác trùng.
+- HTTP 404/409 báo stale conflict; lỗi không rõ kết quả yêu cầu reload và khóa tất cả nút revoke đến khi tải lại thành công. Không tự retry ghi.
+- Tests source: 33 files / 140 tests PASS, TypeScript và scoped lint PASS. Browser fixture component thật + Dialog Base UI + mock API/session PASS: confirm/cancel/Escape, revoke, consumed disabled, conflict/error lock, reload, 403, empty, mobile 375px no overflow, 0 JS errors; server test đã dừng. Ảnh tạm /tmp/ads-approval-browser/mobile.png. Không có thu hồi production.
+- Production build lifecycle API/UI PASS (exit 0). Browser fixture chạy lại sau khi chờ animation PASS; server fixture đã dừng. Chưa commit/push/deploy lifecycle API/UI; chưa thu hồi approval thật.

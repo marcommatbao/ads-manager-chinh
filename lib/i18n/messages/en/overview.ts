@@ -3,6 +3,30 @@ import type {
 import type { overview as vi } from "../vi/overview"
 
 export const overview: Translation<typeof vi> = {
+  // Approval lifecycle wording proposal — pending BA review.
+  "overview.approvals.title": "Approved execution permissions",
+  "overview.approvals.note": "View or revoke permissions before execution only. No budgets are applied here.",
+  "overview.approvals.empty": "No approvals in your scope.",
+  "overview.approvals.loading": "Loading approvals…",
+  "overview.approvals.error": "Could not load approvals. Retry.",
+  "overview.approvals.denied": "Only Super Admin can manage approvals.",
+  "overview.approvals.reload": "Reload",
+  "overview.approvals.revoke": "Revoke",
+  "overview.approvals.confirm": "Confirm revocation",
+  "overview.approvals.cancel": "Cancel",
+  "overview.approvals.question": "Revoke this execution permission?",
+  "overview.approvals.warning": "Revokes unused permission only; does not undo completed changes.",
+  "overview.approvals.conflict": "Approval expired, was consumed or no longer exists. Reload.",
+  "overview.approvals.saveError": "Revocation could not be confirmed. Reload before another action.",
+  "overview.approvals.done": "Execution permission revoked.",
+  "overview.approvals.approved": "Active",
+  "overview.approvals.expired": "Expired",
+  "overview.approvals.consumed": "Claimed for execution",
+  "overview.approvals.revoked": "Revoked",
+  "overview.approvals.expires": "Expires at",
+  "overview.approvals.reconcile": "Needs reconciliation",
+  "overview.approvals.outcome": "Outcome",
+
   // Snapshot wording proposal — pending BA review.
   "overview.snapshot.title": "Read campaign snapshot",
   "overview.snapshot.note": "Read ad data and store a time-limited snapshot only. Budgets are not changed.",

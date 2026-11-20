@@ -94,3 +94,33 @@ export async function executeStoredApproval(id: string, company: string, adapter
     return outcome;
   }
 }
+
+/** Expiry is computed on read; never relabel consumed/uncertain work as retryable. */
+export function listApprovalSummaries(companies: string[], now = new Date()) {
+  return read().filter(row => companies.includes(row.decision.company)).slice(-100).reverse().map(row => {
+    const expired = !Number.isFinite(Date.parse(row.approval.expiresAt)) || Date.parse(row.approval.expiresAt) <= now.getTime();
+    return {
+      approvalId: row.approval.approvalId,
+      company: row.decision.company, campaignId: row.decision.campaignId,
+      status: row.approval.status === "approved" && expired ? "expired" : row.approval.status,
+      createdAt: row.approval.createdAt, expiresAt: row.approval.expiresAt,
+      revokedAt: row.approval.revokedAt ?? null,
+      outcome: row.outcome?.status ?? (row.claimedAt ? "needs_reconciliation" : null),
+      canRevoke: row.approval.status === "approved" && !expired,
+    };
+  });
+}
+
+export async function revokeApproval(id: string, company: string, actorId: string, now = new Date()) {
+  return withFileLock(file(), async () => {
+    const rows = read();
+    const row = rows.find(item => item.approval.approvalId === id && item.decision.company === company);
+    if (!row) throw new Error("APPROVAL_NOT_FOUND");
+    if (row.approval.status !== "approved" || !Number.isFinite(Date.parse(row.approval.expiresAt)) || Date.parse(row.approval.expiresAt) <= now.getTime()) throw new Error("APPROVAL_NOT_REVOCABLE");
+    row.approval.status = "revoked";
+    row.approval.revokedAt = now.toISOString();
+    row.approval.revokedBy = actorId;
+    save(rows);
+    return { approvalId: id, status: "revoked" as const, revokedAt: row.approval.revokedAt };
+  });
+}

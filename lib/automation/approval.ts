@@ -7,7 +7,9 @@ export interface ApprovalRecord {
   decisionIdempotencyKey: string;
   snapshotHash: string;
   approverId: string;
-  status: "approved" | "expired" | "consumed";
+  status: "approved" | "expired" | "consumed" | "revoked";
+  revokedAt?: string;
+  revokedBy?: string;
   createdAt: string;
   expiresAt: string;
 }

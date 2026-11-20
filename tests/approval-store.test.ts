@@ -10,6 +10,27 @@ let dir: string | undefined;
 afterEach(() => { vi.restoreAllMocks(); vi.resetModules(); if (dir) fs.rmSync(dir, { recursive: true, force: true }); dir = undefined; });
 async function setup() { dir = fs.mkdtempSync(path.join(os.tmpdir(), "approval-fixture-")); vi.spyOn(process, "cwd").mockReturnValue(dir); return import("@/lib/automation/approval-store"); }
 describe("server-owned approval store", () => {
+ it("revokes durably before claim and records the server actor", async () => {
+  const store = await setup(); const approval = await store.persistApproval(decision, "actor");
+  await store.revokeApproval(approval.approvalId, "MBC", "trusted-admin");
+  await expect(store.claimApproval(approval.approvalId, "MBC")).rejects.toThrow("APPROVAL_NOT_USABLE");
+  const summary = store.listApprovalSummaries(["MBC"]);
+  expect(summary[0]).toMatchObject({ status: "revoked", canRevoke: false });
+  expect(store.listApprovalSummaries(["MBI"])).toHaveLength(0);
+  expect(JSON.parse(fs.readFileSync(path.join(dir!, "data/automation-approvals.json"), "utf8"))[0].approval.revokedBy).toBe("trusted-admin");
+ });
+ it("does not revoke consumed work or make expired approval usable", async () => {
+  const store = await setup(); const a = await store.persistApproval(decision, "actor");
+  await store.claimApproval(a.approvalId, "MBC");
+  await expect(store.revokeApproval(a.approvalId, "MBC", "admin")).rejects.toThrow("APPROVAL_NOT_REVOCABLE");
+  expect(store.listApprovalSummaries(["MBC"])[0]).toMatchObject({ status: "consumed", outcome: "needs_reconciliation", canRevoke: false });
+ });
+ it("claim and revoke are serialized with exactly one winner", async () => {
+  const store = await setup(); const a = await store.persistApproval(decision, "actor");
+  const results = await Promise.allSettled([store.revokeApproval(a.approvalId, "MBC", "admin"), store.claimApproval(a.approvalId, "MBC")]);
+  expect(results.filter(x => x.status === "fulfilled")).toHaveLength(1);
+  expect(results.filter(x => x.status === "rejected")).toHaveLength(1);
+ });
  it("executes only once and persists read-back outcome", async () => {
   const store = await setup();
   const { DEFAULT_AUTOMATION_POLICY } = await import("@/lib/automation/policy");

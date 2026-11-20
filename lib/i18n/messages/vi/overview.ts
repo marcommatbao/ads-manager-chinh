@@ -1,5 +1,29 @@
 // Khu "overview" (song ngữ GĐ2) — bản gốc tiếng Việt. Khoá dạng "overview.tên". Giữ NGUYÊN câu tiếng Việt đang hiển thị.
 export const overview = {
+  // Approval lifecycle wording proposal — pending BA review.
+  "overview.approvals.title": "Quyền thực thi đã duyệt",
+  "overview.approvals.note": "Chỉ xem hoặc thu hồi quyền trước khi thực thi. Không áp dụng ngân sách tại đây.",
+  "overview.approvals.empty": "Chưa có approval trong phạm vi của bạn.",
+  "overview.approvals.loading": "Đang tải approval…",
+  "overview.approvals.error": "Không tải được danh sách. Hãy thử lại.",
+  "overview.approvals.denied": "Chỉ Super Admin được quản lý approval.",
+  "overview.approvals.reload": "Tải lại",
+  "overview.approvals.revoke": "Thu hồi",
+  "overview.approvals.confirm": "Xác nhận thu hồi",
+  "overview.approvals.cancel": "Hủy",
+  "overview.approvals.question": "Thu hồi quyền thực thi này?",
+  "overview.approvals.warning": "Chỉ hủy quyền chưa sử dụng, không hoàn tác thay đổi đã ghi.",
+  "overview.approvals.conflict": "Approval đã hết hạn, được sử dụng hoặc không còn tồn tại. Hãy tải lại.",
+  "overview.approvals.saveError": "Chưa xác nhận thu hồi thành công. Hãy tải lại trước khi thao tác tiếp.",
+  "overview.approvals.done": "Đã thu hồi quyền thực thi.",
+  "overview.approvals.approved": "Còn hiệu lực",
+  "overview.approvals.expired": "Hết hạn",
+  "overview.approvals.consumed": "Đã nhận thực thi",
+  "overview.approvals.revoked": "Đã thu hồi",
+  "overview.approvals.expires": "Hết hạn lúc",
+  "overview.approvals.reconcile": "Cần đối soát",
+  "overview.approvals.outcome": "Kết quả",
+
   // Snapshot wording proposal — pending BA review.
   "overview.snapshot.title": "Đọc snapshot campaign",
   "overview.snapshot.note": "Chỉ đọc dữ liệu quảng cáo và lưu snapshot có thời hạn. Không thay đổi ngân sách.",
