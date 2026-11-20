@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-11-20T08:28:57.610024+00:00",
+  "branch": "deploy/google-balance",
+  "commit": "599345a",
+  "scope": "focused automation policy release + dependency gate, not full codebase",
+  "stack": "Next.js/React/TypeScript",
+  "verdict": "pass_with_warnings",
+  "critical": 0,
+  "high": 0,
+  "medium": 14,
+  "low": 0,
+  "report_path": ".vibe/vibesec-policy-release.md"
+}
