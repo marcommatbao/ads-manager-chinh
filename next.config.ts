@@ -30,6 +30,12 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Runtime imports read /app/data from its persistent volume, not build assets.
+  // Limit static-generation workers for constrained hosted builders.
+  experimental: { cpus: 2 },
+  outputFileTracingExcludes: {
+    "/*": ["./.claude/**/*", "./tests/**/*", "./docs/**/*", "./data/**/*"],
+  },
   // Keep Google Ads + gRPC packages as native CJS externals (they use
   // native addons and large dependency trees not compatible with webpack bundling).
   serverExternalPackages: [

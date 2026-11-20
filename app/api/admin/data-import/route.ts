@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       if (!rel || typeof f.b64 !== "string") return err(400, `bad entry: ${String(f.p).slice(0, 120)}`)
       const chunk = f.chunk === undefined ? null : Number(f.chunk)
       if (chunk !== null && (!Number.isInteger(chunk) || chunk < 0)) return err(400, `bad chunk: ${rel}`)
-      const target = path.join(dir, rel)
+      const target = path.join(/*turbopackIgnore: true*/ dir, rel)
       if (!target.startsWith(dir + path.sep)) return err(400, `outside data/: ${rel}`)
       const buf = Buffer.from(f.b64, "base64")
       const tmp = `${target}.import-tmp`
