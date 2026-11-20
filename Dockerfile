@@ -70,7 +70,11 @@ ENV NEXT_PUBLIC_GA4_MEASUREMENT_ID_MBI=$NEXT_PUBLIC_GA4_MEASUREMENT_ID_MBI
 ARG NEXT_PUBLIC_GA4_MEASUREMENT_ID_SALE_AI
 ENV NEXT_PUBLIC_GA4_MEASUREMENT_ID_SALE_AI=$NEXT_PUBLIC_GA4_MEASUREMENT_ID_SALE_AI
 
-RUN npm run build
+# Type-check before compilation and reuse Next's incremental cache. Keep
+# Next build's own type validation enabled; fail immediately on either error.
+RUN node node_modules/next/dist/bin/next typegen && \
+    node node_modules/typescript/bin/tsc --project tsconfig.json --noEmit --declarationMap false --emitDeclarationOnly false --tsBuildInfoFile .next/cache/.tsbuildinfo && \
+    npm run build
 
 FROM base AS runner
 WORKDIR /app
