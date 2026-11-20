@@ -1,5 +1,28 @@
 // Khu "overview" (song ngữ GĐ2) — bản gốc tiếng Việt. Khoá dạng "overview.tên". Giữ NGUYÊN câu tiếng Việt đang hiển thị.
 export const overview = {
+  // Policy wording proposal — pending BA review.
+  "overview.policy.title": "Chính sách evaluator mới",
+  "overview.policy.note": "Bản nháp dành cho evaluator mới, độc lập với auto-apply phía trên. Lưu không bật chạy tự động hoặc thay đổi ngân sách quảng cáo.",
+  "overview.policy.loading": "Đang tải chính sách…",
+  "overview.policy.error": "Không tải/lưu được chính sách. Hãy kiểm tra giá trị và thử lại.",
+  "overview.policy.denied": "Chỉ quản trị viên toàn hệ thống được quản lý chính sách này.",
+  "overview.policy.save": "Lưu bản nháp",
+  "overview.policy.saved": "Đã lưu bản nháp. Automation và apply vẫn tắt.",
+  "overview.policy.conflict": "Chính sách đã thay đổi. Tải lại trước khi sửa tiếp.",
+  "overview.policy.reload": "Tải lại",
+  "overview.policy.draft": "Bản nháp",
+  "overview.policy.approved": "Đã duyệt",
+  "overview.policy.minBudget": "Ngân sách tối thiểu",
+  "overview.policy.maxBudget": "Ngân sách tối đa",
+  "overview.policy.maxIncreasePct": "Tăng tối đa (%)",
+  "overview.policy.maxDecreasePct": "Giảm tối đa (%)",
+  "overview.policy.cooldownHours": "Thời gian chờ (giờ)",
+  "overview.policy.minObservedDays": "Số ngày quan sát tối thiểu",
+  "overview.policy.minAttributionCoverage": "Độ phủ attribution tối thiểu (0–1)",
+  "overview.policy.maxMutationsPerRun": "Số thay đổi tối đa mỗi lượt",
+  "overview.policy.maxMutationsPerDay": "Số thay đổi tối đa mỗi ngày",
+  "overview.policy.protected": "Campaign được bảo vệ (mỗi dòng một ID)",
+
   "overview.ngram.title": "🚫 Từ khóa nên chặn (Google)",
   "overview.ngram.viewAndHandle": "Xem & xử lý",
   "overview.ngram.none": "Không có từ khóa rác đáng chú ý",

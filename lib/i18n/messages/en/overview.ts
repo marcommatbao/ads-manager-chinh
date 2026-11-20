@@ -1,7 +1,31 @@
-import type { Translation } from "../../types"
+import type {
+ Translation } from "../../types"
 import type { overview as vi } from "../vi/overview"
 
 export const overview: Translation<typeof vi> = {
+  // Policy wording proposal — pending BA review.
+  "overview.policy.title": "New evaluator policy",
+  "overview.policy.note": "Draft policy for the new evaluator, separate from existing auto-apply above. Saving does not enable automation or change ad budgets.",
+  "overview.policy.loading": "Loading policy…",
+  "overview.policy.error": "Could not load/save policy. Check values and retry.",
+  "overview.policy.denied": "Only a global administrator can manage this policy.",
+  "overview.policy.save": "Save draft",
+  "overview.policy.saved": "Draft saved. Automation and apply remain off.",
+  "overview.policy.conflict": "Policy changed. Reload before editing again.",
+  "overview.policy.reload": "Reload",
+  "overview.policy.draft": "Draft",
+  "overview.policy.approved": "Approved",
+  "overview.policy.minBudget": "Minimum budget",
+  "overview.policy.maxBudget": "Maximum budget",
+  "overview.policy.maxIncreasePct": "Maximum increase (%)",
+  "overview.policy.maxDecreasePct": "Maximum decrease (%)",
+  "overview.policy.cooldownHours": "Cooldown (hours)",
+  "overview.policy.minObservedDays": "Minimum observed days",
+  "overview.policy.minAttributionCoverage": "Minimum attribution coverage (0–1)",
+  "overview.policy.maxMutationsPerRun": "Maximum changes per run",
+  "overview.policy.maxMutationsPerDay": "Maximum changes per day",
+  "overview.policy.protected": "Protected campaigns (one ID per line)",
+
   "overview.ngram.title": "🚫 Keywords to block (Google)",
   "overview.ngram.viewAndHandle": "Review & handle",
   "overview.ngram.none": "No notable junk keywords",

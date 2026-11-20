@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createApproval } from "@/lib/automation/approval";
 import { evaluateBudgetDecision } from "@/lib/automation/profit-evaluator";
 import { applyApprovedBudget, type BudgetProviderAdapter } from "@/lib/automation/provider-apply";
@@ -7,6 +7,23 @@ const decision = () => evaluateBudgetDecision({ company: "MBC", campaignId: "c1"
 const adapter = (afterDelta = 0): BudgetProviderAdapter => { let budget = 1_000_000; return { provider: "meta", readBudget: async () => budget, setBudget: async (_id, value) => { budget = value + afterDelta; return { accepted: true, requestHash: "hash" }; } }; };
 
 describe("provider apply orchestration", () => {
+  it("rejects a tampered approved snapshot before reading or writing provider", async () => {
+    const d = decision(); const approval = createApproval(d, "manager");
+    const readBudget = vi.fn(); const setBudget = vi.fn();
+    const result = await applyApprovedBudget({ ...d, proposedBudget: 1_900_000 }, approval, { provider: "meta", readBudget, setBudget });
+    expect(result.reason).toBe("approval_mismatch");
+    expect(readBudget).not.toHaveBeenCalled(); expect(setBudget).not.toHaveBeenCalled();
+  });
+  it("rejects an invalid approval expiry", async () => {
+    const d = decision(); const setBudget = vi.fn();
+    expect((await applyApprovedBudget(d, { ...createApproval(d, "manager"), expiresAt: "invalid" }, { ...adapter(), setBudget })).reason).toBe("approval_expired");
+    expect(setBudget).not.toHaveBeenCalled();
+  });
+  it.each([NaN, Infinity, -1, 0])("rejects invalid proposed budget %s", async value => {
+    const d = { ...decision(), proposedBudget: value }; const setBudget = vi.fn();
+    expect((await applyApprovedBudget(d, createApproval(d, "manager"), { ...adapter(), setBudget })).status).toBe("blocked");
+    expect(setBudget).not.toHaveBeenCalled();
+  });
   it("applies only an approved decision and verifies read-back", async () => { const d = decision(); const a = createApproval(d, "manager"); const result = await applyApprovedBudget(d, a, adapter()); expect(result.status).toBe("applied"); expect(result.before).toBe(1_000_000); expect(result.after).toBe(1_100_000); });
   it("blocks changed current budget and expired approval", async () => { const d = decision(); const a = createApproval(d, "manager", new Date("2026-11-18T00:00:00Z"), 1); expect((await applyApprovedBudget(d, a, adapter(), new Date("2026-11-18T00:02:00Z"))).reason).toBe("approval_expired"); expect((await applyApprovedBudget(d, createApproval(d, "manager"), { ...adapter(), readBudget: async () => 999 } as BudgetProviderAdapter)).reason).toBe("current_budget_changed"); });
   it("reports provider read-back mismatch", async () => { const d = decision(); const a = createApproval(d, "manager"); const result = await applyApprovedBudget(d, a, adapter(10)); expect(result.status).toBe("readback_mismatch"); });

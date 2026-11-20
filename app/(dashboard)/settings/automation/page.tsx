@@ -12,6 +12,7 @@
 // /api/automation/auto-apply — no placeholder values.
 
 import { useCallback, useEffect, useState } from "react";
+import EvaluatorPolicyPanel from "@/components/settings/EvaluatorPolicyPanel";
 import { Loader2, Play, Eye, ShieldCheck, AlertTriangle } from "lucide-react";
 import { useAdsStore } from "@/store/useAdsStore";
 import { cn } from "@/lib/utils";
@@ -91,18 +92,20 @@ const RULES: { id: string; label: MessageKey; desc: MessageKey; reversible: Mess
 const vnd = (n: number, loc: string) => new Intl.NumberFormat(loc).format(Math.round(n));
 
 export default function AutomationSettingsPage() {
+  const storeCompany = useAdsStore((s) => s.selectedCompany);
+  // Derive the company directly. Keep a local selection only for its store scope.
+  const [selection, setSelection] = useState<{ scope: string; company: string } | null>(null);
+  const fallback = companyIds().includes("MBC") ? "MBC" : companyIds()[0];
+  const company = selection?.scope === storeCompany
+    ? selection.company
+    : isCompany(storeCompany) ? storeCompany : fallback;
+  return <AutomationCompanySettings key={company} company={company}
+    onSelectCompany={value => setSelection({ scope: storeCompany, company: value })} />;
+}
+
+function AutomationCompanySettings({ company, onSelectCompany }: { company: Company; onSelectCompany: (value: string) => void }) {
   const t = useT();
   const loc = useIntlLocale();
-  const storeCompany = useAdsStore((s) => s.selectedCompany);
-  // The store allows "all"; this page configures one company at a time.
-  // Đợt 21: bản cài khách không có MBC/MBI → công ty đang chọn / công ty đầu tiên (trước đây luôn rơi về "MBC" → 403).
-  // Bản Mắt Bão: y như cũ (MBI → MBI, còn lại → MBC).
-  const [company, setCompany] = useState<Company>(
-    storeCompany === "MBI" ? "MBI"
-      : companyIds().includes("MBC") ? "MBC"
-      : (isCompany(storeCompany) ? storeCompany : companyIds()[0]) as Company,
-  );
-
   const [settings, setSettings] = useState<SettingsResponse | null>(null);
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -110,37 +113,30 @@ export default function AutomationSettingsPage() {
   const [running, setRunning] = useState(false);
   const [runMsg, setRunMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isCompany(storeCompany)) setCompany(storeCompany);
-  }, [storeCompany]);
-
-  const load = useCallback(async () => {
-    setLoadError(null);
-    try {
-      const [sRes, pRes] = await Promise.all([
-        fetch(`/api/automation/settings?company=${company}`),
-        fetch(`/api/automation/auto-apply?company=${company}`),
+  const load = useCallback((signal?: AbortSignal) => {
+    return Promise.all([
+      fetch(`/api/automation/settings?company=${company}`, { signal }),
+      fetch(`/api/automation/auto-apply?company=${company}`, { signal }),
+    ]).then(async ([sRes, pRes]) => {
+      const [sJson, pJson] = await Promise.all([
+        sRes.json() as Promise<SettingsResponse>,
+        pRes.json() as Promise<PreviewResponse>,
       ]);
-
-      const sJson = (await sRes.json()) as SettingsResponse;
+      if (signal?.aborted) return;
       if (!sRes.ok) throw new Error(sJson.error || t("creative.settingsAutomation.err.loadSettings", { status: sRes.status }));
       setSettings(sJson);
-
-      const pJson = (await pRes.json()) as PreviewResponse;
-      if (!pRes.ok) {
-        // Show the real reason rather than a silent empty state.
-        setPreview(null);
-        setLoadError(pJson.error || t("creative.settingsAutomation.err.loadPending", { status: pRes.status }));
-      } else {
-        setPreview(pJson);
-      }
-    } catch (err) {
+      setPreview(pRes.ok ? pJson : null);
+      setLoadError(pRes.ok ? null : pJson.error || t("creative.settingsAutomation.err.loadPending", { status: pRes.status }));
+    }).catch((err: unknown) => {
+      if (signal?.aborted) return;
       setLoadError(err instanceof Error ? err.message : t("creative.settingsAutomation.err.connection"));
-    }
+    });
   }, [company, t]);
 
   useEffect(() => {
-    void load();
+    const controller = new AbortController();
+    void load(controller.signal);
+    return () => controller.abort();
   }, [load]);
 
   const enabledRules = settings?.enabledRules ?? [];
@@ -230,7 +226,7 @@ export default function AutomationSettingsPage() {
           {companyIds().map((c) => (
             <button
               key={c}
-              onClick={() => setCompany(c)}
+              onClick={() => onSelectCompany(c)}
               className={cn(
                 "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
                 company === c ? "bg-amber-500 text-amber-950" : "text-slate-500 hover:bg-slate-50",
@@ -389,6 +385,7 @@ export default function AutomationSettingsPage() {
           </p>
         )}
       </div>
+      <EvaluatorPolicyPanel />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import type { BudgetDecision } from "@/lib/automation/profit-evaluator";
+import type { DecisionAuditRecord } from "./decision-audit";
 
 export interface ApprovalRecord {
   approvalId: string;
@@ -12,7 +13,17 @@ export interface ApprovalRecord {
 }
 
 export function snapshotHash(decision: BudgetDecision): string {
+  const provenance = decision as DecisionAuditRecord;
   const canonical = JSON.stringify({
+    decisionId: provenance.decisionId,
+    snapshotRegistryId: provenance.snapshotRegistryId,
+    snapshotPayloadHash: provenance.snapshotPayloadHash,
+    expiresAt: provenance.expiresAt,
+    binding: provenance.binding ? {
+      provider: provenance.binding.provider, accountId: provenance.binding.accountId,
+      company: provenance.binding.company, campaignId: provenance.binding.campaignId,
+      policyRevision: provenance.binding.policyRevision,
+    } : undefined,
     company: decision.company,
     campaignId: decision.campaignId,
     currentBudget: decision.currentBudget,

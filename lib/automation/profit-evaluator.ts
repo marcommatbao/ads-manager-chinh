@@ -1,6 +1,4 @@
-// ============================================================
-// Deterministic profit/budget evaluator — no AI on decision path.
-// ============================================================
+import type { AutomationPolicy } from "@/lib/automation/policy";
 
 export type DecisionAction = "increase_budget" | "decrease_budget" | "hold" | "blocked";
 export type DecisionConfidence = "high" | "medium" | "insufficient";
@@ -32,6 +30,7 @@ export interface BudgetDecisionInput {
   maxDecreasePct: number;
   minAttributionCoverage: number;
   cooldownHours: number;
+  policy?: AutomationPolicy;
 }
 
 export interface BudgetDecision {
@@ -63,6 +62,8 @@ export function evaluateBudgetDecision(input: BudgetDecisionInput): BudgetDecisi
   const idempotencyKey = `budget:${input.company}:${input.campaignId}:${now.toISOString().slice(0, 10)}`;
   const base = { idempotencyKey, company: input.company, campaignId: input.campaignId, campaignName: input.campaignName, currentBudget: input.currentBudget, sourceRefs, requiresApproval: true };
 
+  if (input.policy && !input.policy.globalEnabled) return { ...base, action: "blocked", confidence: "insufficient", reasonCode: "automation_disabled", reason: "Automation policy đang tắt hoặc chưa được duyệt.", proposedBudget: null, delta: null };
+  if (input.policy?.protectedCampaignIds.includes(input.campaignId)) return { ...base, action: "blocked", confidence: "insufficient", reasonCode: "protected_campaign", reason: "Campaign được bảo vệ bởi policy.", proposedBudget: null, delta: null };
   if (input.learningPhase) return { ...base, action: "blocked", confidence: "insufficient", reasonCode: "learning_phase", reason: "Campaign đang learning; chưa được tự động điều chỉnh.", proposedBudget: null, delta: null };
   if ([input.dailySpend, input.roas, input.breakEvenRoas, input.attributionCoverage].some((s) => !usable(s))) {
     return { ...base, action: "blocked", confidence: "insufficient", reasonCode: "source_unavailable", reason: "Thiếu hoặc stale nguồn dữ liệu quyết định.", proposedBudget: null, delta: null };
