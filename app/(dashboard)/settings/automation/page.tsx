@@ -12,6 +12,7 @@
 // /api/automation/auto-apply — no placeholder values.
 
 import { useCallback, useEffect, useState } from "react";
+import { readAutomationJson } from "@/lib/automation/settings-response";
 import EvaluatorPolicyPanel from "@/components/settings/EvaluatorPolicyPanel";
 import { Loader2, Play, Eye, ShieldCheck, AlertTriangle } from "lucide-react";
 import { useAdsStore } from "@/store/useAdsStore";
@@ -114,22 +115,15 @@ function AutomationCompanySettings({ company, onSelectCompany }: { company: Comp
   const [runMsg, setRunMsg] = useState<string | null>(null);
 
   const load = useCallback((signal?: AbortSignal) => {
-    return Promise.all([
-      fetch(`/api/automation/settings?company=${company}`, { signal }),
-      fetch(`/api/automation/auto-apply?company=${company}`, { signal }),
-    ]).then(async ([sRes, pRes]) => {
-      const [sJson, pJson] = await Promise.all([
-        sRes.json() as Promise<SettingsResponse>,
-        pRes.json() as Promise<PreviewResponse>,
-      ]);
+    return Promise.allSettled([
+      fetch(`/api/automation/settings?company=${company}`, { signal }).then(r => readAutomationJson<SettingsResponse>(r, t, "settings")),
+      fetch(`/api/automation/auto-apply?company=${company}`, { signal }).then(r => readAutomationJson<PreviewResponse>(r, t, "pending")),
+    ]).then(([settingsResult, previewResult]) => {
       if (signal?.aborted) return;
-      if (!sRes.ok) throw new Error(sJson.error || t("creative.settingsAutomation.err.loadSettings", { status: sRes.status }));
-      setSettings(sJson);
-      setPreview(pRes.ok ? pJson : null);
-      setLoadError(pRes.ok ? null : pJson.error || t("creative.settingsAutomation.err.loadPending", { status: pRes.status }));
-    }).catch((err: unknown) => {
-      if (signal?.aborted) return;
-      setLoadError(err instanceof Error ? err.message : t("creative.settingsAutomation.err.connection"));
+      setSettings(settingsResult.status === "fulfilled" ? settingsResult.value : null);
+      setPreview(previewResult.status === "fulfilled" ? previewResult.value : null);
+      const failed = [settingsResult, previewResult].filter((r): r is PromiseRejectedResult => r.status === "rejected");
+      setLoadError(failed.length ? failed.map(r => r.reason instanceof Error ? r.reason.message : t("creative.settingsAutomation.err.connection")).join(" · ") : null);
     });
   }, [company, t]);
 
