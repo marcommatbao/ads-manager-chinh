@@ -21,6 +21,8 @@ export function snapshotHash(decision: BudgetDecision): string {
     snapshotRegistryId: provenance.snapshotRegistryId,
     snapshotPayloadHash: provenance.snapshotPayloadHash,
     expiresAt: provenance.expiresAt,
+    currency: provenance.currency,
+    budgetKind: provenance.budgetKind,
     binding: provenance.binding ? {
       provider: provenance.binding.provider, accountId: provenance.binding.accountId,
       company: provenance.binding.company, campaignId: provenance.binding.campaignId,

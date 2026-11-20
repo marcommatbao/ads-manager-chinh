@@ -1,5 +1,24 @@
 // Khu "overview" (song ngữ GĐ2) — bản gốc tiếng Việt. Khoá dạng "overview.tên". Giữ NGUYÊN câu tiếng Việt đang hiển thị.
 export const overview = {
+  // Observation form wording proposal — pending BA review.
+  "overview.observation.registry": "Registry ID của snapshot mới",
+  "overview.observation.record": "Ghi nhận quan sát",
+  "overview.observation.confirm": "Xác nhận lưu quan sát đối soát?",
+  "overview.observation.help": "Dùng snapshot cùng campaign/account được đọc sau khi thực thi. Không nhập số budget trực tiếp. Sau khi gửi, tải lại danh sách trước thao tác tiếp.",
+  "overview.observation.saved": "Đã lưu quan sát. Trạng thái thực thi và quota giữ nguyên.",
+  "overview.observation.conflict": "Snapshot hết hạn, khác phạm vi/đơn vị hoặc approval chưa đủ điều kiện. Đọc lại snapshot và tải lại danh sách.",
+  "overview.observation.error": "Chưa xác nhận lưu thành công. Tải lại danh sách để kiểm tra, không gửi lặp.",
+  "overview.observation.denied": "Phiên đăng nhập không có quyền. Đăng nhập lại và tải lại danh sách.",
+
+  // Reconciliation wording proposal — pending BA review.
+  "overview.observation.label": "Quan sát đối soát gần nhất",
+  "overview.observation.matches_proposed": "Khớp giá trị đề xuất",
+  "overview.observation.matches_before": "Khớp giá trị trước",
+  "overview.observation.different_value": "Giá trị khác — cần kiểm tra",
+  "overview.observation.unverified": "Chưa xác minh",
+  "overview.observation.warning": "Chỉ là giá trị quan sát; không chứng minh lệnh đã ghi thành công. Không tự retry hoặc hoàn tác.",
+  "overview.observation.readAt": "Thời điểm đọc",
+
   // Approval lifecycle wording proposal — pending BA review.
   "overview.approvals.title": "Quyền thực thi đã duyệt",
   "overview.approvals.note": "Chỉ xem hoặc thu hồi quyền trước khi thực thi. Không áp dụng ngân sách tại đây.",

@@ -3,8 +3,10 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "@/components/SessionProvider";
 import { useIntlLocale, useT } from "@/lib/i18n/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import type { ReconciliationAssessment } from "@/lib/automation/reconciliation";
+import ApprovalObservationForm from "./ApprovalObservationForm";
 
-type Approval = { approvalId: string; company: string; campaignId: string; status: "approved" | "expired" | "consumed" | "revoked"; expiresAt: string; revokedAt: string | null; outcome: string | null; canRevoke: boolean };
+type Approval = { approvalId: string; company: string; campaignId: string; status: "approved" | "expired" | "consumed" | "revoked"; expiresAt: string; revokedAt: string | null; outcome: string | null; canRevoke: boolean; lastObservation?: ReconciliationAssessment | null };
 export default function ApprovalLifecyclePanel() {
   const { user, loading } = useSession();
   const t = useT(); const locale = useIntlLocale();
@@ -56,6 +58,12 @@ export default function ApprovalLifecyclePanel() {
       <p className="break-all text-xs text-slate-500">{row.approvalId}</p>
       <p>{t("overview.approvals.expires")}: {new Date(row.expiresAt).toLocaleString(locale)}</p>
       {row.outcome && <p>{t("overview.approvals.outcome")}: {row.outcome === "needs_reconciliation" ? t("overview.approvals.reconcile") : row.outcome}</p>}
+      {row.lastObservation && <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-sm">
+        <p className="font-medium">{t("overview.observation.label")}: {t(`overview.observation.${row.lastObservation.state}`)}</p>
+        <p>{t("overview.observation.readAt")}: {new Date(row.lastObservation.readAt).toLocaleString(locale)}</p>
+        <p className="text-xs text-amber-900">{t("overview.observation.warning")}</p>
+      </div>}
+      {row.status === "consumed" && row.outcome === "needs_reconciliation" && <ApprovalObservationForm key={`${row.approvalId}-${refresh}`} approvalId={row.approvalId} company={row.company} campaignId={row.campaignId} onRecorded={assessment => setRows(current => current.map(item => item.approvalId === row.approvalId ? { ...item, lastObservation: assessment } : item))} />}
       {row.canRevoke && row.status === "approved" && <button type="button" disabled={busy || stale} onClick={() => { setNotice(null); setSelected(row); }} className="rounded-lg border border-red-300 px-3 py-2 text-red-700 disabled:opacity-50">{t("overview.approvals.revoke")}</button>}
     </article>)}
     <Dialog open={Boolean(selected)} onOpenChange={open => { if (!open && !busy) setSelected(null); }}>

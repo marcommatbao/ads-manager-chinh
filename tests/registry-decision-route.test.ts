@@ -9,7 +9,7 @@ vi.mock("@/lib/automation/decision-audit", () => ({ recordDecision: m.audit }));
 import { POST } from "@/app/api/automation/decisions/route";
 const binding = { provider: "google", company: "MBC", accountId: "111", campaignId: "123", policyRevision: "p1" };
 const req = () => new NextRequest("http://localhost/api/automation/decisions", { method: "POST", body: JSON.stringify({ registryId: "r1", company: "MBC", provider: "google", campaignId: "123", proposedBudget: 99999999 }) });
-beforeEach(() => { vi.resetAllMocks(); m.user.mockResolvedValue({ id: "u" }); m.access.mockReturnValue(true); m.resolve.mockReturnValue({ snapshot: { registryId: "r1", binding, payloadHash: "hash", payload: { expiresAt: "2099-01-01", dailyBudget: 1000, approvable: false } } }); m.audit.mockImplementation((d, mode, refs) => ({ ...d, ...refs, mode, decisionId: "d1" })); });
+beforeEach(() => { vi.resetAllMocks(); m.user.mockResolvedValue({ id: "u" }); m.access.mockReturnValue(true); m.resolve.mockReturnValue({ snapshot: { registryId: "r1", binding, payloadHash: "hash", payload: { expiresAt: "2099-01-01", dailyBudget: 1000, currency: "VND", budgetKind: "campaign_daily_budget", approvable: false } } }); m.audit.mockImplementation((d, mode, refs) => ({ ...d, ...refs, mode, decisionId: "d1" })); });
 describe("registry-backed decisions", () => {
  it("checks authorization before accessing registry", async () => { m.access.mockReturnValue(false); expect((await POST(req())).status).toBe(403); expect(m.resolve).not.toHaveBeenCalled(); });
  it("uses server snapshot budget and binding, not client proposal", async () => {

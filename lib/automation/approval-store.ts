@@ -9,9 +9,11 @@ import { readAutomationPolicy } from "./policy";
 import { resolveCurrentSnapshot } from "./snapshot-consumer";
 import { reserveExecution } from "./execution-reservations";
 import type { DecisionAuditRecord } from "./decision-audit";
+import { assessBudgetReconciliation, type ReconciliationAssessment } from "./reconciliation";
 
 type ExecutionOutcome = ApplyResult | { status: "needs_reconciliation"; reason: "provider_or_storage_uncertain" };
-type StoredApproval = { approval: ApprovalRecord; decision: BudgetDecision; claimedAt?: string; outcome?: ExecutionOutcome };
+type Observation = { registryId: string; payloadHash: string; actorId: string; recordedAt: string; assessment: ReconciliationAssessment };
+type StoredApproval = { approval: ApprovalRecord; decision: BudgetDecision; claimedAt?: string; outcome?: ExecutionOutcome; observations?: Observation[] };
 const file = () => path.join(process.cwd(), "data", "automation-approvals.json");
 function read(): StoredApproval[] {
   try {
@@ -107,6 +109,7 @@ export function listApprovalSummaries(companies: string[], now = new Date()) {
       revokedAt: row.approval.revokedAt ?? null,
       outcome: row.outcome?.status ?? (row.claimedAt ? "needs_reconciliation" : null),
       canRevoke: row.approval.status === "approved" && !expired,
+      lastObservation: row.observations?.length ? row.observations[row.observations.length - 1].assessment : null,
     };
   });
 }
@@ -122,5 +125,35 @@ export async function revokeApproval(id: string, company: string, actorId: strin
     row.approval.revokedBy = actorId;
     save(rows);
     return { approvalId: id, status: "revoked" as const, revokedAt: row.approval.revokedAt };
+  });
+}
+
+/** Persist an observation only. Never change outcome, claim, quota or provider. */
+export async function recordApprovalObservation(id: string, company: string, registryId: string, actorId: string, now = new Date()) {
+  return withFileLock(file(), async () => {
+    const rows = read();
+    const row = rows.find(item => item.approval.approvalId === id && item.decision.company === company);
+    if (!row) throw new Error("APPROVAL_NOT_FOUND");
+    if (row.approval.status !== "consumed" || !row.claimedAt || !Number.isFinite(Date.parse(row.claimedAt))) throw new Error("APPROVAL_NOT_RECONCILABLE");
+    const d = row.decision as DecisionAuditRecord;
+    if (!d.binding || d.binding.provider !== "google" || d.proposedBudget === null) throw new Error("OBSERVATION_UNIT_UNVERIFIED");
+    const { snapshot } = resolveCurrentSnapshot({ registryId, provider: d.binding.provider, company, campaignId: d.campaignId }, now);
+    if (snapshot.binding.accountId !== d.binding.accountId || snapshot.binding.policyRevision !== d.binding.policyRevision) throw new Error("OBSERVATION_SCOPE_MISMATCH");
+    const payload = snapshot.payload as typeof snapshot.payload & { currency?: string; budgetKind?: string; dailyBudget?: number };
+    // Original currency/budget kind must be recorded explicitly; no inference
+    // from campaign names, numeric magnitude or platform defaults.
+    const original = d as DecisionAuditRecord & { currency?: string; budgetKind?: string };
+    if (!original.currency || payload.currency !== original.currency || original.budgetKind !== "campaign_daily_budget" || payload.budgetKind !== original.budgetKind || typeof payload.dailyBudget !== "number") throw new Error("OBSERVATION_UNIT_UNVERIFIED");
+    if (Date.parse(payload.readAt) < Date.parse(row.claimedAt)) throw new Error("OBSERVATION_PREDATES_CLAIM");
+    const observedAt = Date.parse(payload.readAt);
+    if (!Number.isFinite(observedAt) || observedAt > now.getTime()) throw new Error("OBSERVATION_TIME_INVALID");
+    const previous = row.observations ?? [];
+    if (previous.some(item => item.registryId === registryId)) throw new Error("OBSERVATION_ALREADY_RECORDED");
+    if (previous.some(item => Date.parse(item.assessment.readAt) >= observedAt)) throw new Error("OBSERVATION_NOT_NEWER");
+    const assessment = assessBudgetReconciliation({ beforeBudget: d.currentBudget, proposedBudget: d.proposedBudget, observedBudget: payload.dailyBudget, scopeVerified: true, readAt: payload.readAt });
+    if (assessment.state === "unverified") throw new Error("OBSERVATION_UNIT_UNVERIFIED");
+    row.observations = [...(row.observations ?? []), { registryId, payloadHash: snapshot.payloadHash, actorId, recordedAt: now.toISOString(), assessment }].slice(-100);
+    save(rows);
+    return assessment;
   });
 }

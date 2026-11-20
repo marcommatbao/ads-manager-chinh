@@ -224,3 +224,35 @@ Lead/opportunity, COGS/refund riêng không bắt buộc cho phạm vi doanh thu
 - HTTP 404/409 báo stale conflict; lỗi không rõ kết quả yêu cầu reload và khóa tất cả nút revoke đến khi tải lại thành công. Không tự retry ghi.
 - Tests source: 33 files / 140 tests PASS, TypeScript và scoped lint PASS. Browser fixture component thật + Dialog Base UI + mock API/session PASS: confirm/cancel/Escape, revoke, consumed disabled, conflict/error lock, reload, 403, empty, mobile 375px no overflow, 0 JS errors; server test đã dừng. Ảnh tạm /tmp/ads-approval-browser/mobile.png. Không có thu hồi production.
 - Production build lifecycle API/UI PASS (exit 0). Browser fixture chạy lại sau khi chờ animation PASS; server fixture đã dừng. Chưa commit/push/deploy lifecycle API/UI; chưa thu hồi approval thật.
+
+## Rollout approval và bước đối soát kế tiếp
+
+- Commit b7d5d1a lifecycle API/UI đã push GitHub main; job cmwp3uq6o2jp00i5fs8ol8nx7 đang build, chưa xác nhận live. Không có production revocation.
+- Local next step: pure reconciliation classifier so sánh before/proposed/observed khi caller xác nhận cùng scope/unit. Trả matches_proposed/matches_before/different_value/unverified; mọi kết quả executionProven=false, retryAllowed=false, undoAllowed=false. Giá trị khớp không chứng minh actor hoặc thành công của lệnh.
+- 34 files / 149 tests PASS; TypeScript/scoped lint PASS. Chưa API/UI/provider reader/store integration cho reconciliation và chưa build sau helper.
+- Cần nối quan sát provider read-only có binding/TTL, lưu audit observation và UI trạng thái trước khi cho người quản trị xử lý đối soát. Không release approval hoặc quota tự động.
+
+## Đối soát snapshot — observation backend/UI
+
+- Deploy approval lifecycle b7d5d1a succeeded (job cmwp3uq6o2jp00i5fs8ol8nx7); chưa acceptance live lifecycle trong bước này.
+- POST `/api/automation/approvals/observe` nhận approvalId/company/registryId, server actor; không nhận budget client làm evidence. Restricted super_admin/company scope.
+- Store resolve snapshot hiện hành (TTL/binding), đòi consumed approval, Google daily budget, currency/budgetKind gốc rõ ràng, cùng account/policy và quan sát không trước claim. Legacy approval thiếu currency/budgetKind bị chặn, không suy diễn đơn vị.
+- Lưu tối đa 100 observations mỗi approval với snapshot hash/actor/timestamp; outcome/claim/quota giữ nguyên. UI chỉ hiển thị lastObservation và warning không chứng minh execution; chưa có form gửi observation.
+- 36 files / 154 tests PASS, TypeScript/scoped lint PASS. Production build đang chạy; browser observation UI chưa kiểm; chưa commit/push/deploy nhóm mới.
+- Còn lại: lưu currency/budgetKind có provenance trên authoritative decision, kiểm thứ tự thời gian quan sát/staleness, browser/API acceptance, form nhập registry reference từ snapshot đã đọc và transactional multi-process coordination trước live apply.
+
+## Form ghi nhận quan sát đối soát
+
+- Approval consumed/needs_reconciliation có form nhập registryId snapshot mới; snapshot panel hiển thị registry ID để lấy mã đúng. Không nhận số budget client.
+- Dialog xác nhận hiển thị company/campaign/approval/registry. Escape/Hủy không POST; khi gửi khóa thao tác. Thành công vẫn giữ outcome cần đối soát. Conflict/403/lỗi chưa rõ kết quả khóa form đến khi reload danh sách. Không retry/undo/reset claim/quota.
+- Browser fixture component thật + Base UI Dialog + mock APIs/session PASS: confirmation, Escape, payload tham chiếu, success, 409/503/403, reload, mobile 375px no overflow, 0 page errors. Server fixture dừng; không ghi quan sát production. Ảnh tạm /tmp/ads-observation-browser/mobile.png. Chưa screen reader/full backend live.
+- TypeScript/scoped lint PASS; 36 files / 154 tests PASS. Build UI mới đang chạy. Nhóm reconciliation backend/UI chưa commit/push/deploy.
+
+## Chốt provenance và thứ tự observation
+
+- Registry decision Google chỉ nhận currency ISO và campaign_daily_budget có giá trị hợp lệ; currency/budgetKind được lưu trong audit và hash approval. Shared budget/Meta không xác minh không tạo decision bằng 0 hoặc đoán đơn vị.
+- Observation chặn registry trùng, thời gian tương lai và timestamp không mới hơn kết quả đã lưu; lastObservation không bị snapshot cũ đè lên.
+- Regression 36 files / 155 tests PASS; TypeScript/lint toàn scope/diff check PASS; dependency HIGH/CRITICAL gate exit 0. Build release đang chạy.
+- Chưa commit/push/deploy nhóm observation hiện tại. Provider mutation/undo/retry không được bật; live collector business evidence vẫn chưa đủ để cấp approval thật.
+
+Production build cuối nhóm observation/provenance PASS (exit 0, job bchxyag0o). Release không kích hoạt apply; kiểm live chỉ đọc sau deploy.

@@ -14,6 +14,8 @@ export interface DecisionAuditRecord extends BudgetDecision {
   snapshotPayloadHash?: string;
   binding?: SnapshotBinding;
   expiresAt?: string;
+  currency?: string;
+  budgetKind?: "campaign_daily_budget" | "shared_budget";
   mode: "evaluate" | "dry_run" | "simulation";
   createdAt: string;
   proposedPayload?: { campaignId: string; currentBudget: number; proposedBudget: number | null };
@@ -30,7 +32,7 @@ function readAll(): DecisionAuditRecord[] {
   }
 }
 
-export function recordDecision(decision: BudgetDecision, mode: DecisionAuditRecord["mode"] = "evaluate", provenance?: Pick<DecisionAuditRecord, "snapshotRegistryId" | "snapshotPayloadHash" | "binding" | "expiresAt">): DecisionAuditRecord {
+export function recordDecision(decision: BudgetDecision, mode: DecisionAuditRecord["mode"] = "evaluate", provenance?: Pick<DecisionAuditRecord, "snapshotRegistryId" | "snapshotPayloadHash" | "binding" | "expiresAt" | "currency" | "budgetKind">): DecisionAuditRecord {
   const record: DecisionAuditRecord = { ...decision, ...provenance, decisionId: crypto.randomUUID(), mode, createdAt: new Date().toISOString(), ...(decision.proposedBudget !== null ? { proposedPayload: { campaignId: decision.campaignId, currentBudget: decision.currentBudget, proposedBudget: decision.proposedBudget } } : {}) };
   const rows = [...readAll(), record].slice(-MAX);
   fs.mkdirSync(path.dirname(FILE), { recursive: true });

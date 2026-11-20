@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
     const { snapshot } = resolveCurrentSnapshot({ registryId: body.registryId, campaignId: body.campaignId, company: body.company, provider: body.provider });
     // Current collectors do not yet provide approved profit/attribution/learning
     // evidence. Persist an honest blocked decision, never use request metrics.
-    const payload = snapshot.payload as unknown as { dailyBudget?: unknown };
-    if (snapshot.binding.provider !== "google" || typeof payload.dailyBudget !== "number" || !Number.isFinite(payload.dailyBudget) || payload.dailyBudget <= 0) return NextResponse.json({ error: "BUDGET_UNIT_OR_VALUE_UNVERIFIED", approvable: false }, { status: 409 });
+    const payload = snapshot.payload as unknown as { dailyBudget?: unknown; currency?: unknown; budgetKind?: unknown };
+    if (typeof payload.currency !== "string" || !/^[A-Z]{3}$/.test(payload.currency) || payload.budgetKind !== "campaign_daily_budget" || snapshot.binding.provider !== "google" || typeof payload.dailyBudget !== "number" || !Number.isFinite(payload.dailyBudget) || payload.dailyBudget <= 0) return NextResponse.json({ error: "BUDGET_UNIT_OR_VALUE_UNVERIFIED", approvable: false }, { status: 409 });
     const decision: BudgetDecision = {
       idempotencyKey: `snapshot:${snapshot.registryId}`, company: snapshot.binding.company,
       campaignId: snapshot.binding.campaignId, campaignName: snapshot.binding.campaignId,
@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
     const audit = recordDecision(decision, "dry_run", {
       snapshotRegistryId: snapshot.registryId, snapshotPayloadHash: snapshot.payloadHash,
       binding: snapshot.binding, expiresAt: snapshot.payload.expiresAt,
+      currency: payload.currency, budgetKind: payload.budgetKind,
     });
     return NextResponse.json({ success: true, mutationPerformed: false, approvable: false, decision: audit }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {

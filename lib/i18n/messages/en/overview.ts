@@ -3,6 +3,25 @@ import type {
 import type { overview as vi } from "../vi/overview"
 
 export const overview: Translation<typeof vi> = {
+  // Observation form wording proposal — pending BA review.
+  "overview.observation.registry": "Registry ID of fresh snapshot",
+  "overview.observation.record": "Record observation",
+  "overview.observation.confirm": "Confirm recording this reconciliation observation?",
+  "overview.observation.help": "Use a snapshot for the same campaign/account read after execution. Do not enter budget amounts. Reload the list before another action.",
+  "overview.observation.saved": "Observation saved. Execution status and quota remain unchanged.",
+  "overview.observation.conflict": "Snapshot expired, scope/units differ, or approval is ineligible. Read a fresh snapshot and reload the list.",
+  "overview.observation.error": "Save could not be confirmed. Reload to check; do not submit repeatedly.",
+  "overview.observation.denied": "Your session lacks permission. Sign in and reload the list.",
+
+  // Reconciliation wording proposal — pending BA review.
+  "overview.observation.label": "Latest reconciliation observation",
+  "overview.observation.matches_proposed": "Matches proposed value",
+  "overview.observation.matches_before": "Matches previous value",
+  "overview.observation.different_value": "Different value — review required",
+  "overview.observation.unverified": "Unverified",
+  "overview.observation.warning": "Observed value only; does not prove execution succeeded. No automatic retry or undo.",
+  "overview.observation.readAt": "Read at",
+
   // Approval lifecycle wording proposal — pending BA review.
   "overview.approvals.title": "Approved execution permissions",
   "overview.approvals.note": "View or revoke permissions before execution only. No budgets are applied here.",

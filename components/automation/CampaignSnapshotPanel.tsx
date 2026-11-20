@@ -61,6 +61,7 @@ export default function CampaignSnapshotPanel({ onRecorded }: { onRecorded: () =
       <p>{t("overview.snapshot.budget")}: {result.snapshot.provider === "google" && result.snapshot.dailyBudget !== undefined ? `${result.snapshot.dailyBudget.toLocaleString(locale)} ${result.snapshot.currency}` : "—"}</p>
       <p>{t("overview.snapshot.observed")}: {result.snapshot.observedDays}</p>
       <p>{t("overview.snapshot.expires")}: {new Date(result.snapshot.expiresAt).toLocaleString(locale)}</p>
+      <p className="break-all text-xs">{t("overview.observation.registry")}: <code>{result.registryId}</code></p>
       <details><summary className="cursor-pointer">{t("overview.snapshot.missing")}</summary><ul className="list-inside list-disc">{result.snapshot.missingSources.map(source => <li key={source} className="break-all">{source}</li>)}</ul></details>
       <button type="button" disabled={busy || state === "recorded" || result.snapshot.provider !== "google"} onClick={() => void record()} className="rounded-lg border px-3 py-2 disabled:opacity-50">{t("overview.snapshot.create")}</button>
     </div>}
