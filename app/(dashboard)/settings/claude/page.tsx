@@ -24,15 +24,19 @@ export default function ClaudeSettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
-    const r = await fetch("/api/mcp-keys", { cache: "no-store" })
-    const d = await r.json().catch(() => null)
-    if (!r.ok || !d?.success) { setErr(d?.error ?? t("settings.claude.loadFail")); return }
-    setData(d); setSettings(d.settings)
+  const load = useCallback((signal?: AbortSignal) => {
+    return fetch("/api/mcp-keys", { cache: "no-store", signal })
+      .then(async r => {
+        const d = await r.json().catch(() => null)
+        if (signal?.aborted) return
+        if (!r.ok || !d?.success) { setErr(d?.error ?? t("settings.claude.loadFail")); return }
+        setErr(null); setData(d); setSettings(d.settings)
+      })
+      .catch(() => { if (!signal?.aborted) setErr(t("settings.claude.loadFail")) })
   }, [t])
-  useEffect(() => { void load() }, [load])
+  useEffect(() => { const controller = new AbortController(); void load(controller.signal); return () => controller.abort() }, [load])
 
-  const endpoint = data?.endpoint || (typeof window !== "undefined" ? `${location.origin}/api/mcp` : "/api/mcp")
+  const endpoint = data?.endpoint || "/api/mcp";
   const codeCmd = secret ? `claude mcp add --transport http adscommand ${endpoint} --header "Authorization: Bearer ${secret}"` : ""
   const desktopCfg = secret ? JSON.stringify({ mcpServers: { adscommand: { command: "npx", args: ["-y", "mcp-remote", endpoint, "--header", `Authorization: Bearer ${secret}`] } } }, null, 2) : ""
   const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleString(loc) : t("settings.claude.never"))
