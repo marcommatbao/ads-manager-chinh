@@ -3,6 +3,28 @@ import type {
 import type { overview as vi } from "../vi/overview"
 
 export const overview: Translation<typeof vi> = {
+  // Snapshot wording proposal — pending BA review.
+  "overview.snapshot.title": "Read campaign snapshot",
+  "overview.snapshot.note": "Read ad data and store a time-limited snapshot only. Budgets are not changed.",
+  "overview.snapshot.company": "Company",
+  "overview.snapshot.provider": "Provider",
+  "overview.snapshot.campaign": "Campaign ID",
+  "overview.snapshot.from": "From",
+  "overview.snapshot.to": "To",
+  "overview.snapshot.read": "Read snapshot",
+  "overview.snapshot.busy": "Processing…",
+  "overview.snapshot.error": "Could not read snapshot. Check access, campaign and dates, then retry.",
+  "overview.snapshot.expired": "Snapshot expired or no longer matches policy. Read it again.",
+  "overview.snapshot.budget": "Provider budget",
+  "overview.snapshot.spend": "Period spend",
+  "overview.snapshot.observed": "Observed days",
+  "overview.snapshot.expires": "Expires at",
+  "overview.snapshot.missing": "Missing approval evidence",
+  "overview.snapshot.create": "Save read-only evaluation",
+  "overview.snapshot.created": "Evaluation recorded. No changes are authorized.",
+  "overview.snapshot.scope": "No authorized company is available.",
+  "overview.snapshot.unknownUnit": "Budget units are unverified; this budget cannot be evaluated yet.",
+
   // Decision history wording — pending BA review.
   "overview.decisions.title": "Decision history",
   "overview.decisions.note": "Read-only evaluation and simulation results. This page does not change budgets.",

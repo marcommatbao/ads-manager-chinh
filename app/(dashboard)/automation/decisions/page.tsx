@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import CampaignSnapshotPanel from "@/components/automation/CampaignSnapshotPanel";
 import { useIntlLocale, useT } from "@/lib/i18n/client";
 
 type Row = { decisionId: string | null; company: string; campaignId: string; campaignName: string; action: "blocked" | "hold" | "increase_budget" | "decrease_budget"; mode: "simulation" | "dry_run" | "evaluate"; currentBudget: number; proposedBudget: number | null; reasonCode: string; createdAt: string; provider: string | null; policyRevision: string | null };
@@ -20,6 +21,7 @@ export default function DecisionHistoryPage() {
   }, [refresh]);
   return <section className="space-y-4">
     <div className="flex flex-wrap justify-between gap-3"><div><h1 className="text-xl font-semibold">{t("overview.decisions.title")}</h1><p className="text-sm text-slate-500">{t("overview.decisions.note")}</p></div><button type="button" onClick={() => { setState("loading"); setRefresh(x => x + 1); }} className="rounded-lg border px-4 py-2 text-sm">{t("overview.decisions.reload")}</button></div>
+    <CampaignSnapshotPanel onRecorded={() => setRefresh(x => x + 1)} />
     <Link href="/settings/automation" className="inline-block text-sm underline">{t("overview.policy.title")}</Link>
     {state === "loading" && <p role="status">{t("overview.decisions.loading")}</p>}
     {state === "error" && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">{t("overview.decisions.error")}</p>}

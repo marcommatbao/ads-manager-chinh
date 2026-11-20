@@ -1,5 +1,27 @@
 // Khu "overview" (song ngữ GĐ2) — bản gốc tiếng Việt. Khoá dạng "overview.tên". Giữ NGUYÊN câu tiếng Việt đang hiển thị.
 export const overview = {
+  // Snapshot wording proposal — pending BA review.
+  "overview.snapshot.title": "Đọc snapshot campaign",
+  "overview.snapshot.note": "Chỉ đọc dữ liệu quảng cáo và lưu snapshot có thời hạn. Không thay đổi ngân sách.",
+  "overview.snapshot.company": "Công ty",
+  "overview.snapshot.provider": "Nền tảng",
+  "overview.snapshot.campaign": "Campaign ID",
+  "overview.snapshot.from": "Từ ngày",
+  "overview.snapshot.to": "Đến ngày",
+  "overview.snapshot.read": "Đọc snapshot",
+  "overview.snapshot.busy": "Đang xử lý…",
+  "overview.snapshot.error": "Không đọc được snapshot. Kiểm tra quyền, campaign và khoảng ngày rồi thử lại.",
+  "overview.snapshot.expired": "Snapshot đã hết hạn hoặc không còn khớp chính sách. Hãy đọc lại.",
+  "overview.snapshot.budget": "Ngân sách provider",
+  "overview.snapshot.spend": "Chi tiêu kỳ đo",
+  "overview.snapshot.observed": "Số ngày quan sát",
+  "overview.snapshot.expires": "Có hạn tới",
+  "overview.snapshot.missing": "Nguồn chưa đủ để duyệt",
+  "overview.snapshot.create": "Lưu đánh giá chỉ đọc",
+  "overview.snapshot.created": "Đã lưu kết quả đánh giá. Chưa có quyền áp dụng thay đổi.",
+  "overview.snapshot.scope": "Bạn chưa có company được phép xem.",
+  "overview.snapshot.unknownUnit": "Đơn vị budget chưa được xác minh; không thể tạo đánh giá từ budget này.",
+
   // Decision history wording — pending BA review.
   "overview.decisions.title": "Lịch sử đề xuất",
   "overview.decisions.note": "Chỉ xem kết quả đánh giá và mô phỏng. Trang này không thay đổi ngân sách.",

@@ -191,3 +191,18 @@ Read-only/simulation → dry-run dữ liệu server → approval → adapter sta
 7. Tích hợp marketing playbooks với business profile thật; docs hiện không tương đương runtime marketing agents.
 
 Lead/opportunity, COGS/refund riêng không bắt buộc cho phạm vi doanh thu MBC/đơn MBI/campaign mà user đã chốt. Profit automation chỉ là lựa chọn riêng nếu có nguồn và duyệt công thức.
+
+## Bàn giao lịch sử và giao diện snapshot kế tiếp
+
+- Commit 7b925b0: decision history GET/UI đã push GitHub main; hosted job cmwosra3i2fx00i5f6jg778re đang chạy, chưa xác nhận live.
+- Bước tiếp local: CampaignSnapshotPanel đọc snapshot theo company/provider/campaign/date, hiển thị source gaps/TTL/currency/observed days và ghi assessment read-only từ registry ID. Không có approve/apply. Meta unknown budget units không được tạo assessment.
+- Local verification: TypeScript/scoped lint PASS, 32 files / 133 tests PASS. Build đang chạy; browser cho panel snapshot chưa kiểm.
+- Không sửa auto-apply cũ, policy thực vẫn Draft/OFF; không tạo khóa MCP hoặc ghi budget provider trong đợt này.
+
+## Kết quả chốt panel snapshot
+
+- Production build local PASS (job bjrejlvex). Regression: 32 files / 133 tests PASS; TypeScript/scoped lint PASS.
+- Browser fixture dùng component thật, CSS build và mock session/permissions/API: PASS cho đọc thành công, null spend, POST chỉ registry reference, TTL hết hạn không POST, Meta không cho lưu đánh giá, API error/recovery, mobile 375px không overflow và 0 page errors. Ảnh mobile đã review. Không có dữ liệu giả được nạp vào website thật; server fixture đã dừng.
+- Artifact tạm: /tmp/ads-snapshot-browser/mobile.png. Đây chưa phải backend/provider live acceptance hay full Next routing/screen reader.
+- Deploy lịch sử 7b925b0, version 23: FAILED do build vượt 12 phút. Trang lịch sử/panel snapshot chưa được xác nhận live. Host diagnose lỗi HTTP 410; raw logs chỉ có timeout, chưa có substep để kết luận nguyên nhân. Không tạo deploy chồng hoặc tự tăng RAM/timeout.
+- Kế tiếp cần điều tra đường build host và kiểm khả năng source/image trace trước khi redeploy. Cần Ops cung cấp log npm/Next/Docker từng bước nếu nền tảng không trả được; phần runtime app cũ giữ nguyên.
