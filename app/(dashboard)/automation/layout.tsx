@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Zap, Target, RefreshCw, History } from "lucide-react";
 import { isHiddenPage } from "@/lib/hidden-pages";
+import { useT } from "@/lib/i18n/client";
 
 // Danh sách đầy đủ. Mục nào nằm trong lib/hidden-pages.ts sẽ bị lọc ở dưới —
 // KHÔNG xoá dòng ở đây. Xoá tay là cách cũ, nó bỏ sót các link trong app.
@@ -21,11 +22,12 @@ export default function AutomationLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const t = useT();
 
   return (
     <div className="space-y-6">
       {/* Tab Navigation */}
-      <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm w-fit">
+      <div className="flex flex-wrap items-center gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm w-fit max-w-full">
         {tabs.map(({ label, href, icon: Icon }) => {
           const isActive =
             href === "/automation"
@@ -48,6 +50,9 @@ export default function AutomationLayout({
             </Link>
           );
         })}
+        <Link href="/automation/decisions" className={cn("rounded-lg px-4 py-2 text-sm font-medium", pathname === "/automation/decisions" ? "bg-amber-500 text-amber-950" : "text-slate-500 hover:bg-slate-50")}>
+          {t("overview.decisions.title")}
+        </Link>
       </div>
 
       {/* Page Content */}

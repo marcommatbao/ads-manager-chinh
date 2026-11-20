@@ -1,5 +1,25 @@
 // Khu "overview" (song ngữ GĐ2) — bản gốc tiếng Việt. Khoá dạng "overview.tên". Giữ NGUYÊN câu tiếng Việt đang hiển thị.
 export const overview = {
+  // Decision history wording — pending BA review.
+  "overview.decisions.title": "Lịch sử đề xuất",
+  "overview.decisions.note": "Chỉ xem kết quả đánh giá và mô phỏng. Trang này không thay đổi ngân sách.",
+  "overview.decisions.loading": "Đang tải lịch sử…",
+  "overview.decisions.error": "Không tải được lịch sử. Vui lòng thử lại.",
+  "overview.decisions.empty": "Chưa có đề xuất nào trong phạm vi tài khoản của bạn.",
+  "overview.decisions.reload": "Tải lại",
+  "overview.decisions.simulation": "Mô phỏng — không thể áp dụng",
+  "overview.decisions.dry_run": "Kiểm trước từ snapshot",
+  "overview.decisions.evaluate": "Đánh giá",
+  "overview.decisions.blocked": "Bị chặn",
+  "overview.decisions.hold": "Giữ nguyên",
+  "overview.decisions.increase_budget": "Đề xuất tăng",
+  "overview.decisions.decrease_budget": "Đề xuất giảm",
+  "overview.decisions.reason": "Mã lý do",
+  "overview.decisions.policy": "Phiên bản chính sách",
+  "overview.decisions.budgetNote": "Đơn vị tiền chưa có trong bản ghi; không dùng số này để xác nhận ghi ngân sách.",
+  "overview.decisions.current": "Ngân sách trước",
+  "overview.decisions.proposed": "Ngân sách đề xuất",
+
   // Policy wording proposal — pending BA review.
   "overview.policy.title": "Chính sách evaluator mới",
   "overview.policy.note": "Bản nháp dành cho evaluator mới, độc lập với auto-apply phía trên. Lưu không bật chạy tự động hoặc thay đổi ngân sách quảng cáo.",

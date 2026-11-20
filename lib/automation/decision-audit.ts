@@ -20,7 +20,14 @@ export interface DecisionAuditRecord extends BudgetDecision {
 }
 
 function readAll(): DecisionAuditRecord[] {
-  try { return JSON.parse(fs.readFileSync(FILE, "utf8")) as DecisionAuditRecord[]; } catch { return []; }
+  try {
+    const rows: unknown = JSON.parse(fs.readFileSync(FILE, "utf8"));
+    if (!Array.isArray(rows)) throw new Error("Invalid decision store");
+    return rows;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw new Error("DECISION_STORE_UNAVAILABLE");
+  }
 }
 
 export function recordDecision(decision: BudgetDecision, mode: DecisionAuditRecord["mode"] = "evaluate", provenance?: Pick<DecisionAuditRecord, "snapshotRegistryId" | "snapshotPayloadHash" | "binding" | "expiresAt">): DecisionAuditRecord {

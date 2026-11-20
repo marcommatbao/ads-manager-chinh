@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { canAccessCompany } from "@/lib/permissions";
+import { canAccessCompany, getCompaniesForRole } from "@/lib/permissions";
 import { isCompany } from "@/lib/companies/registry";
 import { resolveCurrentSnapshot } from "@/lib/automation/snapshot-consumer";
-import { recordDecision } from "@/lib/automation/decision-audit";
+import { recordDecision, recentDecisionAudits } from "@/lib/automation/decision-audit";
 import type { BudgetDecision } from "@/lib/automation/profit-evaluator";
 
 export const dynamic = "force-dynamic";
@@ -38,5 +38,31 @@ export async function POST(request: NextRequest) {
     const code = error instanceof Error ? error.message : "";
     const conflict = ["SNAPSHOT_NOT_FOUND", "SNAPSHOT_BINDING_MISMATCH", "SNAPSHOT_EXPIRED_OR_INVALID", "SNAPSHOT_INTEGRITY_FAILED", "ACCOUNT_NOT_CONFIGURED"].includes(code);
     return NextResponse.json({ error: conflict ? "SNAPSHOT_REFRESH_REQUIRED" : "DECISION_UNAVAILABLE" }, { status: conflict ? 409 : 503 });
+  }
+}
+
+export async function GET(request: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const company = request.nextUrl.searchParams.get("company");
+  const allowed = getCompaniesForRole(user);
+  if (company && (!isCompany(company) || !allowed.includes(company))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  try {
+    const decisions = recentDecisionAudits(2000)
+      .filter(row => allowed.includes(row.company) && (!company || row.company === company))
+      .slice(0, 100)
+      .map(row => ({
+        decisionId: row.decisionId ?? null, company: row.company, campaignId: row.campaignId,
+        campaignName: row.campaignName, action: row.action, mode: row.mode,
+        currentBudget: row.currentBudget, proposedBudget: row.proposedBudget,
+        confidence: row.confidence, reasonCode: row.reasonCode,
+        createdAt: row.createdAt, expiresAt: row.expiresAt ?? null,
+        provider: row.binding?.provider ?? null, policyRevision: row.binding?.policyRevision ?? null,
+        // No approval button is offered by this read-only endpoint.
+        mutationEnabled: false,
+      }));
+    return NextResponse.json({ success: true, decisions, limit: 100 }, { headers: { "Cache-Control": "private, no-store" } });
+  } catch {
+    return NextResponse.json({ error: "DECISION_HISTORY_UNAVAILABLE" }, { status: 503 });
   }
 }

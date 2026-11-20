@@ -3,6 +3,26 @@ import type {
 import type { overview as vi } from "../vi/overview"
 
 export const overview: Translation<typeof vi> = {
+  // Decision history wording — pending BA review.
+  "overview.decisions.title": "Decision history",
+  "overview.decisions.note": "Read-only evaluation and simulation results. This page does not change budgets.",
+  "overview.decisions.loading": "Loading history…",
+  "overview.decisions.error": "Could not load history. Please retry.",
+  "overview.decisions.empty": "No decisions in your authorized scope yet.",
+  "overview.decisions.reload": "Reload",
+  "overview.decisions.simulation": "Simulation — not executable",
+  "overview.decisions.dry_run": "Snapshot dry run",
+  "overview.decisions.evaluate": "Evaluation",
+  "overview.decisions.blocked": "Blocked",
+  "overview.decisions.hold": "Hold",
+  "overview.decisions.increase_budget": "Proposed increase",
+  "overview.decisions.decrease_budget": "Proposed decrease",
+  "overview.decisions.reason": "Reason code",
+  "overview.decisions.policy": "Policy revision",
+  "overview.decisions.budgetNote": "Currency is not recorded; do not use these amounts to authorize a budget write.",
+  "overview.decisions.current": "Previous budget",
+  "overview.decisions.proposed": "Proposed budget",
+
   // Policy wording proposal — pending BA review.
   "overview.policy.title": "New evaluator policy",
   "overview.policy.note": "Draft policy for the new evaluator, separate from existing auto-apply above. Saving does not enable automation or change ad budgets.",

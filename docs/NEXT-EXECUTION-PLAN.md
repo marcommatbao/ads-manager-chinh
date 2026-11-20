@@ -163,3 +163,31 @@ Read-only/simulation → dry-run dữ liệu server → approval → adapter sta
 - KPI hiện chỉ là target tháng company/kênh, không phải break-even campaign. Attribution chưa đủ campaign-level business evidence; learning status và budget currency normalization chưa nối authoritative. Meta budget tiếp tục minor units và không approvable; Google shared budget không được dùng để apply campaign riêng.
 - Tests execution/campaign/quota và regression: 6 files / 37 tests PASS, TypeScript/scoped lint/diff check PASS trước bổ sung hash binding. Cần regression lại và build trước khi bàn giao final.
 - Chưa gọi Meta/Google live hoặc bật apply endpoint.
+
+## Trạng thái đối chiếu mới nhất — không dùng phần trăm ước đoán
+
+### Đã có và kiểm chứng trên website
+- Policy settings backend đọc/lưu Draft OFF/read-back; trang Claude và Auto-Apply APIs đã phục hồi dependency standalone.
+- Deploy e3612d4 succeeded; browser thật 0 hydration/JS errors khi mở settings Claude/Automation sau deploy.
+- Dependency gate lần gần nhất: 0 critical/0 high, 14 moderate; đây là kết quả tại thời điểm remediation, không phải cam kết vĩnh viễn.
+
+### Đã có code, chưa hoàn tất business/runtime automation
+- Snapshot collectors Google/Meta, registry TTL/binding; simulation không approvable.
+- Approval decision ID/server snapshot; durable claim/replay, reservation và mock read-back. Chưa có đường apply thật từ collector read-only.
+- KPI/attribution/learning campaign-level, currency conversion Meta/shared Google budget chưa đủ để auto-optimize.
+
+### Đang thực hiện
+- GET decision history company-filtered, bounded 100 entries, no raw source/account/token; storage corruption returns error.
+- Trang `/automation/decisions` read-only với trạng thái loading/empty/error, simulation/blocked và link policy; không có nút approval/apply.
+- Verification: TypeScript/scoped lint PASS; 32 files / 133 tests PASS. Build đang chạy; browser chưa kiểm cho màn mới.
+
+### Thứ tự tiếp theo
+1. Browser/build acceptance cho history; commit/deploy khi đạt.
+2. Evidence nguồn campaign KPI/attribution/learning và currency; không coi target company là campaign profit.
+3. UI snapshot/decision creation read-only dựa trên provider/account scope đã xác nhận.
+4. Approval expiration/revocation/reconciliation UI và durable execution kiểm đa process trước apply thật.
+5. Provider adapters và undo trên campaign test được chỉ định; không test bằng budget live đang tiêu.
+6. Monitoring phù hợp quota, notification dedup và outcome 3/7 ngày.
+7. Tích hợp marketing playbooks với business profile thật; docs hiện không tương đương runtime marketing agents.
+
+Lead/opportunity, COGS/refund riêng không bắt buộc cho phạm vi doanh thu MBC/đơn MBI/campaign mà user đã chốt. Profit automation chỉ là lựa chọn riêng nếu có nguồn và duyệt công thức.
