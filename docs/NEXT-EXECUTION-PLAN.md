@@ -345,3 +345,11 @@ Tổng điểm có trọng số bằng nhau = 60%. Ưu tiên kế tiếp: deploy
 - Actual OS-process contention, restart replay, failed insert rollback, SIGKILL before COMMIT, corruption/busy/future clocks validated. Focused 10/10 PASS; final full regression 240 PASS / 71 skipped, 0 failed; TypeScript/scoped lint/diff check and production build PASS.
 - Node22.23.2 SQLite3.51.3 verified locally. node:22-alpine image pulled, but bounded runtime probe could not start due Docker host cgroupv2 invalid state. Did not disable resource limits; no stack/service started. App build alone does not prove dormant coordinator standalone wiring.
 - No dependency added; production audit HIGH/CRITICAL gate exit0. No production migration, deployment, activation or provider budget write performed. Details: EXECUTION-COORDINATOR.md.
+
+## Delta caps and immutable outcome bookkeeping — 2026-11-21
+
+- Dormant coordinator now requires decision/approval/source/policy identity and verified integer minor-unit daily campaign budgets; absolute deltas reserve atomically under explicit company/currency/day/run caps. No guessed thresholds or mixed-currency pooling.
+- Append-only outcome events are idempotent; timeout/unknown stay needs_reconciliation and never release quota. Provider-confirmed bookkeeping requires opaque receipt, but receipt provenance is NOT verified by coordinator. No approval JSON/SQLite cross-store atomicity claim; executeStoredApproval guard unchanged.
+- Added read-only scripts/check-execution-runtime.mjs and BETA-RUNTIME-VERIFICATION.md. Local probe confirms Node/SQLite only; remote beta volume and image unverified. Current session lacks Vibe Host MCP/SSH for that host.
+- User selected Vibe Host MCP access and confirmed a Meta test exists; tool connection and exact company/account/campaign/adset/currency/budget range/window remain required before write testing. No test IDs inferred from live campaigns.
+- Full regression 248 PASS / 71 skipped / 0 failed. TypeScript initially failed on BigInt literal target; changed to BigInt(0), then typecheck/scoped lint/focused 18 tests/build PASS. Worker wrapper failed after edits; main independently verified. No deploy, activation, DB migration or provider write.
