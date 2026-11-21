@@ -3,10 +3,11 @@ import { useState } from "react";
 import { useSession } from "@/components/SessionProvider";
 import { resolveCompanyScope } from "@/lib/permissions";
 import { useIntlLocale, useT } from "@/lib/i18n/client";
+import { evidenceMessageKey } from "@/lib/automation/evidence-labels";
 
 type Snapshot = {
   registryId: string; policyRevision: string;
-  snapshot: { provider: "google" | "meta"; company: string; campaignId: string; name: string; currency: string; dailyBudget?: number; dailyBudgetMinorUnits?: number | null; spend: number | null; observedDays: number; from: string; to: string; expiresAt: string; missingSources: string[] };
+  snapshot: { provider: "google" | "meta"; company: string; campaignId: string; name: string; currency: string; dailyBudget?: number; dailyBudgetMinorUnits?: number | null; spend: number | null; observedDays: number; from: string; to: string; expiresAt: string; readAt?: string; collectedAt?: string; spendConsistency?: { status: "matched" | "mismatch" }; missingSources: string[] };
 };
 export default function CampaignSnapshotPanel({ onRecorded }: { onRecorded: () => void }) {
   const t = useT(); const locale = useIntlLocale(); const { user, loading } = useSession();
@@ -62,7 +63,13 @@ export default function CampaignSnapshotPanel({ onRecorded }: { onRecorded: () =
       <p>{t("overview.snapshot.observed")}: {result.snapshot.observedDays}</p>
       <p>{t("overview.snapshot.expires")}: {new Date(result.snapshot.expiresAt).toLocaleString(locale)}</p>
       <p className="break-all text-xs">{t("overview.observation.registry")}: <code>{result.registryId}</code></p>
-      <details><summary className="cursor-pointer">{t("overview.snapshot.missing")}</summary><ul className="list-inside list-disc">{result.snapshot.missingSources.map(source => <li key={source} className="break-all">{source}</li>)}</ul></details>
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+        <h4 className="font-medium">{t("overview.snapshot.missing")}</h4>
+        <ul className="mt-2 list-inside list-disc space-y-2">{[...new Set(result.snapshot.missingSources)].map(source => <li key={source}>{t(evidenceMessageKey(source))}<details className="ml-4 text-xs text-slate-500"><summary className="cursor-pointer">{t("overview.evidence.code")}</summary><code className="break-all">{source}</code></details></li>)}</ul>
+      </div>
+      {result.snapshot.readAt && <p className="text-xs text-slate-500">{t("overview.evidence.readAt")}: {new Date(result.snapshot.readAt).toLocaleString(locale)}</p>}
+      {result.snapshot.collectedAt && <p className="text-xs text-slate-500">{t("overview.evidence.collectedAt")}: {new Date(result.snapshot.collectedAt).toLocaleString(locale)}</p>}
+      {result.snapshot.spendConsistency && <p className={result.snapshot.spendConsistency.status === "matched" ? "text-emerald-700" : "text-red-700"}>{t(result.snapshot.spendConsistency.status === "matched" ? "overview.evidence.consistencyMatched" : "overview.evidence.consistencyMismatch")}</p>}
       <button type="button" disabled={busy || state === "recorded" || result.snapshot.provider !== "google"} onClick={() => void record()} className="rounded-lg border px-3 py-2 disabled:opacity-50">{t("overview.snapshot.create")}</button>
     </div>}
   </section>;

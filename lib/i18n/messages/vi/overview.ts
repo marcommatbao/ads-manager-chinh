@@ -1,5 +1,20 @@
 // Khu "overview" (song ngữ GĐ2) — bản gốc tiếng Việt. Khoá dạng "overview.tên". Giữ NGUYÊN câu tiếng Việt đang hiển thị.
 export const overview = {
+  // Evidence explanations — wording proposal pending BA review.
+  "overview.evidence.campaign_attributed_revenue": "Chưa có doanh thu đơn hàng được đối chiếu riêng cho campaign này. Số chuyển đổi nền tảng tự báo không thay thế doanh thu Odoo.",
+  "overview.evidence.approved_break_even_roas": "Chưa có ngưỡng ROAS hòa vốn được xác nhận. KPI doanh thu cấp công ty không phải ROAS hòa vốn campaign.",
+  "overview.evidence.campaign_attribution_coverage": "Chưa xác nhận tỷ lệ đơn/doanh thu gắn đúng campaign; chưa đủ bằng chứng để phân bổ ngân sách.",
+  "overview.evidence.verified_learning_status": "Chưa xác minh trạng thái learning từ provider; không tự coi campaign là đã học xong.",
+  "overview.evidence.verified_budget_currency_unit": "Chưa xác minh đơn vị budget Meta; không tự đổi minor units thành đồng.",
+  "overview.evidence.daily_period_spend_mismatch": "Tổng chi tiêu từng ngày đang lệch tổng kỳ. Đọc lại snapshot trước khi dùng số liệu.",
+  "overview.evidence.unknown": "Cần xác minh thêm một nguồn dữ liệu. Xem mã kỹ thuật để đối chiếu.",
+  "overview.evidence.code": "Mã kỹ thuật",
+  "overview.evidence.blocked": "Đánh giá bị chặn: snapshot chưa đủ nguồn nghiệp vụ. Không có thay đổi ngân sách được cấp quyền.",
+  "overview.evidence.readAt": "Bắt đầu đọc",
+  "overview.evidence.collectedAt": "Hoàn tất thu thập",
+  "overview.evidence.consistencyMatched": "Tổng chi tiêu ngày khớp tổng kỳ",
+  "overview.evidence.consistencyMismatch": "Tổng chi tiêu ngày không khớp tổng kỳ",
+
   // Observation form wording proposal — pending BA review.
   "overview.observation.registry": "Registry ID của snapshot mới",
   "overview.observation.record": "Ghi nhận quan sát",

@@ -286,3 +286,18 @@ Production build cuối nhóm observation/provenance PASS (exit 0, job bchxyag0o
 10. Release/security/runtime: 75% — dependency high/critical=0, build/runtime packaging và settings/browser verified; chưa provider write/rollback acceptance, còn moderate advisories.
 
 Tổng điểm có trọng số bằng nhau = 60%. Ưu tiên kế tiếp: deploy timing/consistency → UI evidence source gaps → decision actionable non-profit khi có business policy/learning nguồn thật → approval + provider staging acceptance. Không cần COGS để đóng read-only revenue/order/pacing; profit optimization tách riêng.
+
+## Giải thích nguồn evidence trên giao diện
+
+- Source gaps được trình bày bằng lời giải thích vi/en; mã kỹ thuật giữ trong details. Không biến Google conversion value hoặc KPI company thành doanh thu/break-even campaign.
+- Snapshot UI hiển thị readAt/collectedAt và daily/period spend consistency khi payload có; tương thích snapshot cũ không có trường mới.
+- Decision snapshot_not_approvable được giải thích rõ là không cấp quyền đổi budget.
+- Verification: TypeScript/scoped lint PASS; 38 files / 170 source tests PASS; browser fixture snapshot regression PASS (success/error/TTL/Meta disabled/null spend/mobile/zero JS errors), all APIs mocked and server stopped. Build đang chạy. Chưa commit/push/deploy nhóm UI này.
+- Job timing release cmwp84yfr2keu0i5fz6bc2k9h vẫn running ở lần kiểm cuối; không kết luận deployed, không tạo job chồng.
+
+## Release verification 2026-11-21
+
+- Evidence UI: full suite 38 files / 170 tests PASS; 71 tests skipped, không coi skipped là acceptance. TypeScript, scoped ESLint, diff check và production build PASS.
+- Production dependency audit: HIGH/CRITICAL gate PASS; còn 14 moderate. Không force upgrade dependency breaking.
+- GitHub main được kiểm read-only ở 8ffcb0a trước release; chưa xác minh deployment runtime mới trong lượt này.
+- Bước P0 kế tiếp đang bổ sung Google learning evidence từ campaign.bidding_strategy_system_status; ACTIVE/ENABLED không chứng minh mature, snapshot vẫn approvable=false. Provider runtime acceptance còn thiếu.

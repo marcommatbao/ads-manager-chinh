@@ -32,7 +32,7 @@ export default function DecisionHistoryPage() {
       <div className="flex flex-wrap justify-between gap-2"><h2 className="font-semibold break-all">{row.company} · {row.campaignName}</h2><span>{t(`overview.decisions.${row.action}`)}</span></div>
       <p className="text-amber-800">{t(`overview.decisions.${row.mode}`)}</p>
       <p>{row.provider ?? "—"} · {new Date(row.createdAt).toLocaleString(locale)}</p>
-      <dl className="grid gap-2 sm:grid-cols-2"><div><dt className="text-slate-500">{t("overview.decisions.reason")}</dt><dd className="break-all font-mono">{row.reasonCode}</dd></div><div><dt className="text-slate-500">{t("overview.decisions.policy")}</dt><dd className="break-all">{row.policyRevision ?? "—"}</dd></div></dl>
+      <dl className="grid gap-2 sm:grid-cols-2"><div><dt className="text-slate-500">{t("overview.decisions.reason")}</dt><dd className="break-all">{row.reasonCode === "snapshot_not_approvable" ? t("overview.evidence.blocked") : row.reasonCode}</dd></div><div><dt className="text-slate-500">{t("overview.decisions.policy")}</dt><dd className="break-all">{row.policyRevision ?? "—"}</dd></div></dl>
       <details><summary className="cursor-pointer">{t("overview.decisions.current")} / {t("overview.decisions.proposed")}</summary><p className="tabular-nums">{Number.isFinite(row.currentBudget) ? row.currentBudget.toLocaleString(locale) : "—"} → {row.proposedBudget === null ? "—" : row.proposedBudget.toLocaleString(locale)}</p><p className="text-xs text-slate-500">{t("overview.decisions.budgetNote")}</p></details>
     </article>)}
   </section>;

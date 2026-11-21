@@ -3,6 +3,21 @@ import type {
 import type { overview as vi } from "../vi/overview"
 
 export const overview: Translation<typeof vi> = {
+  // Evidence explanations — wording proposal pending BA review.
+  "overview.evidence.campaign_attributed_revenue": "Campaign-level order revenue has not been reconciled. Platform conversion value is not Odoo revenue.",
+  "overview.evidence.approved_break_even_roas": "No verified break-even ROAS threshold. Company revenue KPI is not campaign break-even ROAS.",
+  "overview.evidence.campaign_attribution_coverage": "Campaign order/revenue attribution coverage has not been verified; budget allocation evidence is incomplete.",
+  "overview.evidence.verified_learning_status": "Provider learning status is unverified; the campaign is not assumed mature.",
+  "overview.evidence.verified_budget_currency_unit": "Meta budget units are unverified; minor units are not automatically treated as currency units.",
+  "overview.evidence.daily_period_spend_mismatch": "Daily spend differs from the period total. Refresh the snapshot before using these figures.",
+  "overview.evidence.unknown": "An additional data source needs verification. Check the technical code.",
+  "overview.evidence.code": "Technical code",
+  "overview.evidence.blocked": "Evaluation blocked: business evidence is incomplete. No budget mutation is authorized.",
+  "overview.evidence.readAt": "Read started",
+  "overview.evidence.collectedAt": "Collection completed",
+  "overview.evidence.consistencyMatched": "Daily spend matches period total",
+  "overview.evidence.consistencyMismatch": "Daily spend differs from period total",
+
   // Observation form wording proposal — pending BA review.
   "overview.observation.registry": "Registry ID of fresh snapshot",
   "overview.observation.record": "Record observation",
