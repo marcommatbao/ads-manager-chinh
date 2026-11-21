@@ -4,10 +4,8 @@ import { withFileLock } from "@/lib/file-lock";
 import { writeFileAtomicSync } from "@/lib/fs-atomic";
 import { createApproval, isApprovalUsable, type ApprovalRecord } from "./approval";
 import type { BudgetDecision } from "./profit-evaluator";
-import { applyApprovedBudget, type ApplyResult, type BudgetProviderAdapter } from "./provider-apply";
-import { readAutomationPolicy } from "./policy";
+import type { ApplyResult, BudgetProviderAdapter } from "./provider-apply";
 import { resolveCurrentSnapshot } from "./snapshot-consumer";
-import { reserveExecution } from "./execution-reservations";
 import type { DecisionAuditRecord } from "./decision-audit";
 import { assessBudgetReconciliation, type ReconciliationAssessment } from "./reconciliation";
 
@@ -56,45 +54,16 @@ export async function claimApproval(id: string, company: string, now = new Date(
   });
 }
 
-/** No HTTP apply endpoint calls this yet. Requires a server-owned adapter. */
-export async function executeStoredApproval(id: string, company: string, adapter: BudgetProviderAdapter, now = new Date()): Promise<ExecutionOutcome> {
-  const policy = readAutomationPolicy();
-  if (!policy.globalEnabled || !policy.applyEnabled) throw new Error("AUTOMATION_APPLY_DISABLED");
-  // Legacy/unbound approvals cannot reach a provider adapter.
-  const candidate = read().find(row => row.approval.approvalId === id && row.decision.company === company);
-  const decision = candidate?.decision as DecisionAuditRecord | undefined;
-  if (!decision?.binding || !decision.snapshotRegistryId || !decision.snapshotPayloadHash || !decision.expiresAt || !Number.isFinite(Date.parse(decision.expiresAt)) || Date.parse(decision.expiresAt) <= now.getTime()) throw new Error("EXECUTION_BINDING_REQUIRED");
-  const { snapshot } = resolveCurrentSnapshot({ registryId: decision.snapshotRegistryId, provider: decision.binding.provider, company, campaignId: decision.campaignId }, now);
-  if (!snapshot.payload.approvable || snapshot.payloadHash !== decision.snapshotPayloadHash || snapshot.binding.policyRevision !== decision.binding.policyRevision || adapter.provider !== snapshot.binding.provider || adapter.accountId !== snapshot.binding.accountId) throw new Error("EXECUTION_BINDING_MISMATCH");
-  // Quotas and currency-sensitive execution remain disabled until an adapter
-  // declares a verified provider/account scope and complete business evidence.
-  await reserveExecution(id, snapshot.binding, `policy:${policy.version}`, policy, now);
-  const claimed = await claimApproval(id, company, now);
-  const persistOutcome = async (outcome: ExecutionOutcome) => withFileLock(file(), async () => {
-    const rows = read();
-    const row = rows.find(item => item.approval.approvalId === id);
-    if (!row || row.approval.status !== "consumed") throw new Error("APPROVAL_NOT_USABLE");
-    row.outcome = outcome;
-    save(rows);
-  });
-  let outcome: ExecutionOutcome;
-  try {
-    const latest = readAutomationPolicy();
-    if (!latest.globalEnabled || !latest.applyEnabled || latest.protectedCampaignIds.includes(claimed.decision.campaignId) || latest.version !== policy.version) {
-      outcome = { status: "blocked", provider: adapter.provider, campaignId: claimed.decision.campaignId, before: null, requested: claimed.decision.proposedBudget, after: null, reason: "policy_changed_or_disabled" };
-    } else {
-      // Durable claim is already consumed. Only this private call receives the
-      // verified pre-consumption state; never reopen the persisted approval.
-      outcome = await applyApprovedBudget(claimed.decision, { ...claimed.approval, status: "approved" }, adapter, now);
-    }
-    await persistOutcome(outcome);
-    return outcome;
-  } catch {
-    outcome = { status: "needs_reconciliation", reason: "provider_or_storage_uncertain" };
-    // Never expose raw provider errors or automatically retry a mutation.
-    try { await persistOutcome(outcome); } catch { /* consumed claim remains the durable stop */ }
-    return outcome;
-  }
+/**
+ * Execution is unavailable until a shared transactional coordinator can atomically
+ * enforce reservation and claim across executors. Local file locks do not verify
+ * single-process ownership. Policy, HTTP input and environment cannot unlock this.
+ * Restore binding/policy validation with that coordinator before enabling apply.
+ */
+// Preserve the caller signature while execution is deliberately unavailable.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function executeStoredApproval(_id: string, _company: string, _adapter: BudgetProviderAdapter, _now?: Date): Promise<ExecutionOutcome> {
+  throw new Error("EXECUTION_COORDINATION_UNVERIFIED");
 }
 
 /** Expiry is computed on read; never relabel consumed/uncertain work as retryable. */

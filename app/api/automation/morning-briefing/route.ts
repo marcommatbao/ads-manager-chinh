@@ -38,6 +38,14 @@ function disabledResponse(t: TFunction) {
   });
 }
 
+function publicGenerationError(error: unknown, t: TFunction): string {
+  if (error instanceof Error) {
+    const translated = friendlyError(error.message);
+    if (translated !== error.message) return translated;
+  }
+  return t("libcase.r.mb.2");
+}
+
 async function build(force: boolean) {
   if (!force) {
     const cached = getCachedBriefing();
@@ -65,11 +73,9 @@ export async function GET() {
     const { data, cached } = await build(false);
     return NextResponse.json({ success: true, data, cached });
   } catch (err) {
-    // Return the real reason — the card shows json.error rather than
-    // pretending there is simply no briefing today.
-    const message = err instanceof Error ? err.message : t("libcase.r.mb.2");
+    // Only translated configuration errors are public; other diagnostics stay server-side.
     console.error("[automation/morning-briefing GET]", err);
-    return NextResponse.json({ success: false, error: friendlyError(message) }, { status: 502 });
+    return NextResponse.json({ success: false, error: publicGenerationError(err, t) }, { status: 502 });
   }
 }
 
@@ -99,8 +105,7 @@ export async function POST() {
     const { data } = await build(true);
     return NextResponse.json({ success: true, data, cached: false });
   } catch (err) {
-    const message = err instanceof Error ? err.message : t("libcase.r.mb.2");
     console.error("[automation/morning-briefing POST]", err);
-    return NextResponse.json({ success: false, error: friendlyError(message) }, { status: 502 });
+    return NextResponse.json({ success: false, error: publicGenerationError(err, t) }, { status: 502 });
   }
 }

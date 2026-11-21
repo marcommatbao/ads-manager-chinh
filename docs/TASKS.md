@@ -13,7 +13,8 @@
 
 ## Remaining before Gate 3 close
 
-- [ ] Add route integration tests for authentication and Gemini call count.
+- [x] Add real GET/POST route integration tests with mocked auth/provider boundaries, cache, persistence handoff, throttle, fallback, and actual generation-path Gemini call counts (19 tests).
+- [x] Sanitize unrecognized generation Error messages in GET/POST; regression tests require generic responses while configuration errors retain translated guidance.
 - [ ] Run authenticated staging/browser acceptance for loading, success, fallback, blocked, error, and evidence states.
 - [ ] Resolve or separately document the pre-existing lint error at `app/(dashboard)/campaigns/page.tsx:382`.
 

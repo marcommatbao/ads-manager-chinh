@@ -31,7 +31,7 @@ describe("server-owned approval store", () => {
   expect(results.filter(x => x.status === "fulfilled")).toHaveLength(1);
   expect(results.filter(x => x.status === "rejected")).toHaveLength(1);
  });
- it("executes only once and persists read-back outcome", async () => {
+ it("refuses repeated execution without verified coordination", async () => {
   const store = await setup();
   const { DEFAULT_AUTOMATION_POLICY } = await import("@/lib/automation/policy");
   const a = await store.persistApproval(decision, "actor");
@@ -39,23 +39,24 @@ describe("server-owned approval store", () => {
   let budget = 100;
   const setBudget = vi.fn(async (_id: string, value: number) => { budget = value; return { accepted: true, requestHash: "fixture" }; });
   const adapter = { provider: "meta" as const, accountId: "111", readBudget: async () => budget, setBudget };
-  expect((await store.executeStoredApproval(a.approvalId, "MBC", adapter)).status).toBe("applied");
-  await expect(store.executeStoredApproval(a.approvalId, "MBC", adapter)).rejects.toThrow("EXECUTION_ALREADY_RESERVED");
-  expect(setBudget).toHaveBeenCalledTimes(1);
+  await expect(store.executeStoredApproval(a.approvalId, "MBC", adapter)).rejects.toThrow("EXECUTION_COORDINATION_UNVERIFIED");
+  await expect(store.executeStoredApproval(a.approvalId, "MBC", adapter)).rejects.toThrow("EXECUTION_COORDINATION_UNVERIFIED");
+  expect(setBudget).not.toHaveBeenCalled();
   const rows = JSON.parse(fs.readFileSync(path.join(dir!, "data/automation-approvals.json"), "utf8"));
-  expect(rows[0].outcome.status).toBe("applied");
+  expect(rows[0].approval.status).toBe("approved");
+  expect(rows[0].outcome).toBeUndefined();
  });
- it("blocks disabled apply and does not retry an uncertain provider write", async () => {
+ it("refuses execution regardless of apply policy", async () => {
   const store = await setup(); const a = await store.persistApproval(decision, "actor");
   const setBudget = vi.fn(async () => { throw new Error("secret-provider-timeout"); });
   const adapter = { provider: "meta" as const, accountId: "111", readBudget: async () => 100, setBudget };
-  await expect(store.executeStoredApproval(a.approvalId, "MBC", adapter)).rejects.toThrow("AUTOMATION_APPLY_DISABLED");
+  await expect(store.executeStoredApproval(a.approvalId, "MBC", adapter)).rejects.toThrow("EXECUTION_COORDINATION_UNVERIFIED");
   expect(setBudget).not.toHaveBeenCalled();
   const { DEFAULT_AUTOMATION_POLICY } = await import("@/lib/automation/policy");
   fs.writeFileSync(path.join(dir!, "data/automation-policy.json"), JSON.stringify({ ...DEFAULT_AUTOMATION_POLICY, status: "approved", owner: "fixture", globalEnabled: true, applyEnabled: true }));
-  expect((await store.executeStoredApproval(a.approvalId, "MBC", adapter)).status).toBe("needs_reconciliation");
-  await expect(store.executeStoredApproval(a.approvalId, "MBC", adapter)).rejects.toThrow("EXECUTION_ALREADY_RESERVED");
-  expect(setBudget).toHaveBeenCalledTimes(1);
+  await expect(store.executeStoredApproval(a.approvalId, "MBC", adapter)).rejects.toThrow("EXECUTION_COORDINATION_UNVERIFIED");
+  await expect(store.executeStoredApproval(a.approvalId, "MBC", adapter)).rejects.toThrow("EXECUTION_COORDINATION_UNVERIFIED");
+  expect(setBudget).not.toHaveBeenCalled();
   expect(fs.readFileSync(path.join(dir!, "data/automation-approvals.json"), "utf8")).not.toContain("secret-provider-timeout");
  });
  it("persists approval and allows exactly one concurrent claim", async () => {

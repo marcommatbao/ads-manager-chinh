@@ -310,3 +310,14 @@ Tổng điểm có trọng số bằng nhau = 60%. Ưu tiên kế tiếp: deploy
 - Focused regression 4 files / 61 tests PASS, scoped ESLint PASS. Full suite 38 files / 206 tests PASS, 71 skipped; TypeScript, scoped ESLint và production build PASS. Chưa provider live acceptance.
 - GitHub reconnect: Coder external-auth xác nhận repository push permission; chuyển riêng remote github sang HTTPS và credential helper external-auth, không lưu token vào repo/config. Lỗi SSH junnyken không còn là đường push được sử dụng.
 - Điều kiện trước provider write acceptance: campaign test/account/currency/budget range đã xác nhận, policy nghiệp vụ được duyệt và coordination an toàn. Không bật apply hoặc sửa auto-apply cũ trong đợt này.
+
+## P0 tiếp theo — Gate 3 và execution coordination (2026-11-21)
+
+- GitHub main đã được xác nhận trùng 4ca7492 sau push thành công; file token tạm đã xóa. Không suy deployment live từ push.
+- Repository-wide lint FAIL: 909 errors / 860 warnings. Scoped lint của nhóm release trước PASS; không được gọi toàn repo sạch lint. Google GAQL date check chạy riêng PASS.
+- executeStoredApproval hiện hard-block EXECUTION_COORDINATION_UNVERIFIED trước đọc policy/snapshot, reservation, claim và provider access. Chưa có transactional coordinator; không cho boolean/env hoặc HTTP mở khóa.
+- Guard regression 25/25 tests PASS; scoped ESLint/diff check PASS. Test mới kiểm approval và filesystem không đổi, provider calls bằng 0 ngay cả khi policy bật. Legacy auto-apply routes không thay đổi.
+- Đây là safety stop, KHÔNG phải hoàn thành concurrency đa process. Trước khi thay guard phải triển khai transactional reservation+claim và khôi phục binding/policy/outcome validation, rồi test crash/restart/concurrency.
+- Gate 3 thêm 19 route integration tests qua engine thật, mock provider/auth/AI boundary: unauthorized/disabled/cache/throttle không gọi generation khi bị chặn; critical source failure không gọi AI; healthy source là positive control; fallback/history handoff được kiểm.
+- GET/POST generation errors không được nhận diện cấu hình trả generic message thay vì diagnostic gốc. Known configuration guidance được giữ. Source-error text trong successful blocked dataGaps chưa được làm sạch trong nhóm này, không coi là universal sanitization.
+- Full regression: 40 files / 226 tests PASS, 71 skipped. TypeScript/scoped ESLint/diff check PASS. Production build PASS (exit 0). Chưa runtime acceptance/deploy; Coder external-auth write handshake vẫn HTTP 403, credential tạm của đợt trước đã xóa nên chưa push nhóm mới.
