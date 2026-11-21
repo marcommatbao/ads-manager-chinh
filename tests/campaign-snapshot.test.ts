@@ -6,6 +6,33 @@ const now = new Date("2026-11-20T00:00:00Z");
 const row = { customer: { id: "1112223333", currency_code: "VND", time_zone: "Asia/Ho_Chi_Minh" }, campaign: { id: "123", name: "fixture", status: "ENABLED" }, campaign_budget: { amount_micros: 1000000000, explicitly_shared: false }, metrics: { cost_micros: 250000000, conversions_value: 400 } };
 describe("read-only Google campaign snapshot", () => {
  beforeEach(() => { vi.resetAllMocks(); m.getGoogleAdsCustomer.mockReturnValue({ query: m.query }); });
+ it.each([
+  "LEARNING_NEW", "LEARNING_SETTING_CHANGE", "LEARNING_BUDGET_CHANGE",
+  "LEARNING_COMPOSITION_CHANGE", "LEARNING_CONVERSION_TYPE_CHANGE",
+  "LEARNING_CONVERSION_SETTING_CHANGE", "MULTIPLE_LEARNING", 3, 4, 5, 6, 7, 8, 23,
+ ])("records explicit provider learning evidence for %s without authorizing apply", async (providerStatus) => {
+  m.query.mockResolvedValueOnce([{ ...row, campaign: { ...row.campaign, bidding_strategy_system_status: providerStatus } }]).mockResolvedValueOnce([]);
+  const result = await collectGoogleCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now, () => now);
+  expect(m.query.mock.calls[0][0]).toContain("campaign.bidding_strategy_system_status");
+  expect(result.learningEvidence).toEqual({ source: "campaign.bidding_strategy_system_status", status: "learning", providerStatus });
+  expect(result.missingSources).not.toContain("verified_learning_status");
+  expect(result.missingSources).toEqual(expect.arrayContaining(["campaign_attributed_revenue", "approved_break_even_roas", "campaign_attribution_coverage", "daily_period_spend_mismatch"]));
+  expect(result.approvable).toBe(false);
+ });
+ it.each([undefined, null, "UNKNOWN", "UNSPECIFIED", "UNAVAILABLE", "ENABLED", "ACTIVE", "LIMITED_BY_DATA", "MULTIPLE", "LEARNING_FUTURE", "3", 0, 1, 2, 11, 22, 26, 999, {}, true, NaN])("keeps unsupported or non-learning status %s unverified", async (providerStatus) => {
+  m.query.mockResolvedValueOnce([{ ...row, campaign: { ...row.campaign, status: "ACTIVE", bidding_strategy_system_status: providerStatus } }]).mockResolvedValueOnce([]);
+  const result = await collectGoogleCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now, () => now);
+  expect(result.learningEvidence?.status).toBe("unverified");
+  expect(result.missingSources).toContain("verified_learning_status");
+  expect(result.approvable).toBe(false);
+ });
+ it("includes learning evidence in snapshot identity", async () => {
+  const collect = async (providerStatus: string) => {
+   m.query.mockResolvedValueOnce([{ ...row, campaign: { ...row.campaign, bidding_strategy_system_status: providerStatus } }]).mockResolvedValueOnce([]);
+   return collectGoogleCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now, () => now);
+  };
+  expect((await collect("LEARNING_NEW")).snapshotId).not.toBe((await collect("UNKNOWN")).snapshotId);
+ });
  it("preserves currency, micros, scope and observed dates without authorizing apply", async () => {
   m.query.mockResolvedValueOnce([row]).mockResolvedValueOnce([{ campaign: { id: "123" }, segments: { date: "2026-11-10" }, metrics: { cost_micros: 250000000 } }]);
   const result = await collectGoogleCampaignSnapshot("MBC", "123", "2026-11-01", "2026-11-19", now, () => now);

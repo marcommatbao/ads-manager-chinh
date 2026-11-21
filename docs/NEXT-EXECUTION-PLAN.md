@@ -301,3 +301,12 @@ Tổng điểm có trọng số bằng nhau = 60%. Ưu tiên kế tiếp: deploy
 - Production dependency audit: HIGH/CRITICAL gate PASS; còn 14 moderate. Không force upgrade dependency breaking.
 - GitHub main được kiểm read-only ở 8ffcb0a trước release; chưa xác minh deployment runtime mới trong lượt này.
 - Bước P0 kế tiếp đang bổ sung Google learning evidence từ campaign.bidding_strategy_system_status; ACTIVE/ENABLED không chứng minh mature, snapshot vẫn approvable=false. Provider runtime acceptance còn thiếu.
+
+### Google learning evidence và blocker push
+
+- Commit evidence UI: 9699d73. Push GitHub main bị từ chối: SSH identity junnyken không có quyền ghi marcommatbao/ads-manager-chinh; commit còn local, không kết luận deployed.
+- Collector Google đọc campaign.bidding_strategy_system_status (field/enum được đối chiếu SDK v23 đã cài). Chỉ LEARNING_* và MULTIPLE_LEARNING xác nhận đang learning; ENABLED/ACTIVE/unknown không chứng minh mature.
+- Learning evidence tham gia snapshot hash. Vẫn approvable=false; doanh thu, attribution và break-even guards không bị gỡ.
+- Focused regression 4 files / 61 tests PASS, scoped ESLint PASS. Full suite 38 files / 206 tests PASS, 71 skipped; TypeScript, scoped ESLint và production build PASS. Chưa provider live acceptance.
+- GitHub reconnect: Coder external-auth xác nhận repository push permission; chuyển riêng remote github sang HTTPS và credential helper external-auth, không lưu token vào repo/config. Lỗi SSH junnyken không còn là đường push được sử dụng.
+- Điều kiện trước provider write acceptance: campaign test/account/currency/budget range đã xác nhận, policy nghiệp vụ được duyệt và coordination an toàn. Không bật apply hoặc sửa auto-apply cũ trong đợt này.

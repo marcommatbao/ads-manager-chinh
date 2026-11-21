@@ -12,6 +12,11 @@ export interface CampaignReadSnapshot {
   currency: string;
   timeZone: string;
   status: string;
+  learningEvidence?: {
+    source: "campaign.bidding_strategy_system_status";
+    status: "learning" | "unverified";
+    providerStatus: string | number | null;
+  };
   budgetKind: "campaign_daily_budget" | "shared_budget";
   dailyBudget: number;
   spend: number;
@@ -30,7 +35,7 @@ export interface CampaignReadSnapshot {
 
 type Row = {
   customer?: { id?: unknown; currency_code?: unknown; time_zone?: unknown };
-  campaign?: { id?: unknown; name?: unknown; status?: unknown };
+  campaign?: { id?: unknown; name?: unknown; status?: unknown; bidding_strategy_system_status?: unknown };
   campaign_budget?: { amount_micros?: unknown; explicitly_shared?: unknown };
   metrics?: { cost_micros?: unknown; conversions_value?: unknown };
   segments?: { date?: unknown };
@@ -42,6 +47,15 @@ const numeric = (value: unknown): number => {
   return n;
 };
 
+// Google Ads v23 BiddingStrategySystemStatus (installed SDK enum): only
+// explicit learning states establish evidence. ENABLED is not maturity proof.
+const learningStatuses = new Set<unknown>([
+  "LEARNING_NEW", "LEARNING_SETTING_CHANGE", "LEARNING_BUDGET_CHANGE",
+  "LEARNING_COMPOSITION_CHANGE", "LEARNING_CONVERSION_TYPE_CHANGE",
+  "LEARNING_CONVERSION_SETTING_CHANGE", "MULTIPLE_LEARNING",
+  3, 4, 5, 6, 7, 8, 23,
+]);
+
 /** Read-only. Company must be authorized by the route BEFORE calling this collector. */
 export async function collectGoogleCampaignSnapshot(company: string, campaignId: string, from: string, to: string, now = new Date(), completedAt: () => Date = () => new Date()): Promise<CampaignReadSnapshot> {
   if (!/^\d{1,25}$/.test(campaignId)) throw new Error("INVALID_CAMPAIGN_ID");
@@ -52,7 +66,7 @@ export async function collectGoogleCampaignSnapshot(company: string, campaignId:
   const customer = getGoogleAdsCustomer(company);
   const rows = await customer.query(`
     SELECT customer.id, customer.currency_code, customer.time_zone,
-      campaign.id, campaign.name, campaign.status,
+      campaign.id, campaign.name, campaign.status, campaign.bidding_strategy_system_status,
       campaign_budget.amount_micros, campaign_budget.explicitly_shared,
       metrics.cost_micros, metrics.conversions_value
     FROM campaign WHERE campaign.id = ${campaignId}
@@ -79,10 +93,17 @@ export async function collectGoogleCampaignSnapshot(company: string, campaignId:
   const periodMicros = numeric(row.metrics?.cost_micros);
   const spendMatched = Math.abs(dailyMicros - periodMicros) <= 1; // one micro-unit rounding tolerance
   const window = snapshotCollectionWindow(now, completedAt());
+  const providerLearningStatus = row.campaign?.bidding_strategy_system_status;
+  const learningVerified = learningStatuses.has(providerLearningStatus);
   const base = {
     provider: "google" as const, company, accountId, campaignId,
     name: String(row.campaign?.name ?? campaignId), currency: row.customer.currency_code,
     timeZone: row.customer.time_zone, status: String(row.campaign?.status),
+    learningEvidence: {
+      source: "campaign.bidding_strategy_system_status" as const,
+      status: learningVerified ? "learning" as const : "unverified" as const,
+      providerStatus: typeof providerLearningStatus === "string" || (typeof providerLearningStatus === "number" && Number.isFinite(providerLearningStatus)) ? providerLearningStatus : null,
+    },
     budgetKind: row.campaign_budget.explicitly_shared ? "shared_budget" as const : "campaign_daily_budget" as const,
     dailyBudget: numeric(row.campaign_budget.amount_micros) / 1e6,
     spend: periodMicros / 1e6,
@@ -90,7 +111,7 @@ export async function collectGoogleCampaignSnapshot(company: string, campaignId:
     platformConversionValue: numeric(row.metrics?.conversions_value),
     observedDays: dates.size, from, to, ...window,
     approvable: false as const,
-    missingSources: ["campaign_attributed_revenue", "approved_break_even_roas", "campaign_attribution_coverage", "verified_learning_status", ...(!spendMatched ? ["daily_period_spend_mismatch"] : [])],
+    missingSources: ["campaign_attributed_revenue", "approved_break_even_roas", "campaign_attribution_coverage", ...(!learningVerified ? ["verified_learning_status"] : []), ...(!spendMatched ? ["daily_period_spend_mismatch"] : [])],
   };
   return { ...base, snapshotId: crypto.createHash("sha256").update(JSON.stringify(base)).digest("hex") };
 }
