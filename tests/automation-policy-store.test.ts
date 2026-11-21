@@ -41,3 +41,26 @@ describe("policy draft persistence", () => {
     await expect(store.saveAutomationPolicyDraft(store.DEFAULT_AUTOMATION_POLICY, "admin", "1.0")).rejects.toThrow("POLICY_AUDIT_UNAVAILABLE");
   });
 });
+
+it("preserves omitted caps, edits with new revision/audit, and explicitly clears", async () => {
+  scratch = fs.mkdtempSync(path.join(os.tmpdir(), "policy-test-"));
+  vi.spyOn(process, "cwd").mockReturnValue(scratch);
+  const store = await import("@/lib/automation/policy");
+  const caps = { USD: { maxAbsoluteBudgetDeltaPerDayMinor: 100, maxAbsoluteBudgetDeltaPerRunMinor: 50 } };
+  const first = await store.saveAutomationPolicyDraft({ ...store.DEFAULT_AUTOMATION_POLICY, absoluteBudgetDeltaCapsByCurrency: caps }, "admin", "1.0");
+  const { absoluteBudgetDeltaCapsByCurrency: omitted, ...legacy } = first;
+  void omitted;
+  const second = await store.saveAutomationPolicyDraft({ ...legacy, cooldownHours: 12 }, "admin", first.version);
+  expect(second.absoluteBudgetDeltaCapsByCurrency).toEqual(caps);
+  expect(second.version).not.toBe(first.version);
+  const edited = await store.saveAutomationPolicyDraft({ ...second, absoluteBudgetDeltaCapsByCurrency: { USD: { ...caps.USD, maxAbsoluteBudgetDeltaPerRunMinor: 10 } } }, "admin", second.version);
+  expect(edited.version).not.toBe(second.version);
+  await expect(store.saveAutomationPolicyDraft(legacy, "admin", first.version)).rejects.toThrow("POLICY_CONFLICT");
+  await expect(store.saveAutomationPolicyDraft({ ...edited, absoluteBudgetDeltaCapsByCurrency: null }, "admin", edited.version)).rejects.toThrow();
+  const audit = JSON.parse(fs.readFileSync(path.join(scratch, "data/automation-policy-audit.json"), "utf8"));
+  expect(audit[2].before.absoluteBudgetDeltaCapsByCurrency).toEqual(caps);
+  expect(audit[2].after).toEqual(edited);
+  const cleared = await store.saveAutomationPolicyDraft({ ...edited, absoluteBudgetDeltaCapsByCurrency: {} }, "admin", edited.version);
+  expect(store.readAutomationPolicy()).toEqual(cleared);
+  expect(cleared.absoluteBudgetDeltaCapsByCurrency).toEqual({});
+});

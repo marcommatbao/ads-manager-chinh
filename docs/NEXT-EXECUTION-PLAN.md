@@ -353,3 +353,11 @@ Tổng điểm có trọng số bằng nhau = 60%. Ưu tiên kế tiếp: deploy
 - Added read-only scripts/check-execution-runtime.mjs and BETA-RUNTIME-VERIFICATION.md. Local probe confirms Node/SQLite only; remote beta volume and image unverified. Current session lacks Vibe Host MCP/SSH for that host.
 - User selected Vibe Host MCP access and confirmed a Meta test exists; tool connection and exact company/account/campaign/adset/currency/budget range/window remain required before write testing. No test IDs inferred from live campaigns.
 - Full regression 248 PASS / 71 skipped / 0 failed. TypeScript initially failed on BigInt literal target; changed to BigInt(0), then typecheck/scoped lint/focused 18 tests/build PASS. Worker wrapper failed after edits; main independently verified. No deploy, activation, DB migration or provider write.
+
+## Server policy currency caps — 2026-11-21
+
+- User deferred beta management access and live Meta test scope. Continued backend-only policy cap integration; no runtime/provider actions.
+- Policy now projects explicit per-currency absolute day/run caps, safe integer minor units, run<=day, no business defaults. Legacy missing map reads as empty; empty means no coordination permission. Reject invalid ISO/prototype/extra fields and malformed units.
+- Draft save preserves omitted caps for older clients under revision lock, explicit {} clears, cap edits generate new revision and audit, all saves remain Draft/OFF. Current UI spreads complete policy and retains caps; no cap editor added.
+- Pure coordinatorLimitsFromPolicy requires validated approved/owned/enabled policy and exact own currency entry. Not atomic authorization, not wired into apply, existing hard guard unchanged.
+- Main regression 281 PASS / 71 skipped / 0 failed; focused policy suites 53/53 PASS; typecheck/scoped lint/diff check and GAQL date check PASS. Production dependency audit HIGH/CRITICAL gate PASS, 14 moderate remain. Main build initially blocked by worker next build in same repo; no lock removed. Worker and final independent main production build PASS (exit 0). No deploy, live policy change, migration or provider write.

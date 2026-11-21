@@ -27,3 +27,20 @@ describe("automation policy", () => {
     expect(result.reasonCode).toBe("protected_campaign");
   });
 });
+
+describe("absolute delta policy caps", () => {
+  const cap = { maxAbsoluteBudgetDeltaPerDayMinor: 100, maxAbsoluteBudgetDeltaPerRunMinor: 50 };
+  it("reads legacy policy with empty caps and OFF defaults", () => {
+    const { absoluteBudgetDeltaCapsByCurrency: omitted, ...legacy } = DEFAULT_AUTOMATION_POLICY;
+    void omitted;
+    expect(validateAutomationPolicy(legacy).absoluteBudgetDeltaCapsByCurrency).toEqual({});
+    expect(DEFAULT_AUTOMATION_POLICY.absoluteBudgetDeltaCapsByCurrency).toEqual({});
+  });
+  it.each([null, [], { XYZ: cap }, { usd: cap }, JSON.parse('{"__proto__":{}}'), { constructor: cap }, Object.create({ USD: cap }), { USD: Object.create(cap) }, { USD: { ...cap, unit: "major" } }, { USD: { day: 100, run: 50 } }, { USD: { ...cap, maxAbsoluteBudgetDeltaPerRunMinor: 101 } }, { USD: { ...cap, maxAbsoluteBudgetDeltaPerDayMinor: Number.MAX_SAFE_INTEGER + 1 } }, { USD: { ...cap, maxAbsoluteBudgetDeltaPerRunMinor: -1 } }, { USD: { ...cap, maxAbsoluteBudgetDeltaPerRunMinor: .5 } }, { USD: { ...cap, maxAbsoluteBudgetDeltaPerRunMinor: "50" } }, { USD: JSON.parse('{"maxAbsoluteBudgetDeltaPerDayMinor":100,"maxAbsoluteBudgetDeltaPerRunMinor":50,"__proto__":{}}') }])("rejects malformed caps %#", caps => {
+    expect(() => validateAutomationPolicy({ ...DEFAULT_AUTOMATION_POLICY, absoluteBudgetDeltaCapsByCurrency: caps })).toThrow();
+  });
+  it("projects independent ISO caps including zero and safe integer boundary", () => {
+    const caps = { USD: cap, VND: { maxAbsoluteBudgetDeltaPerDayMinor: Number.MAX_SAFE_INTEGER, maxAbsoluteBudgetDeltaPerRunMinor: 0 } };
+    expect(validateAutomationPolicy({ ...DEFAULT_AUTOMATION_POLICY, absoluteBudgetDeltaCapsByCurrency: caps }).absoluteBudgetDeltaCapsByCurrency).toEqual(caps);
+  });
+});

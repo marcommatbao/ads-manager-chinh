@@ -34,3 +34,13 @@ describe("policy settings API", () => {
     expect((await POST(request())).status).toBe(400);
   });
 });
+
+it("returns cap map on settings reads and draft responses without projection loss", async () => {
+  mocks.getCurrentUser.mockResolvedValue({ id: "trusted", role: "super_admin" });
+  const policy = { version: "new", status: "draft", absoluteBudgetDeltaCapsByCurrency: { USD: { maxAbsoluteBudgetDeltaPerDayMinor: 100, maxAbsoluteBudgetDeltaPerRunMinor: 50 } } };
+  mocks.readAutomationPolicy.mockReturnValue(policy);
+  mocks.saveAutomationPolicyDraft.mockResolvedValue(policy);
+  expect((await (await GET()).json()).policy).toEqual(policy);
+  expect((await (await POST(request({ policy, expectedVersion: "old" }))).json()).policy).toEqual(policy);
+  expect(mocks.saveAutomationPolicyDraft).toHaveBeenCalledWith(policy, "trusted", "old");
+});
