@@ -160,14 +160,46 @@ describe("morning briefing real route + generation integration (mock boundaries)
     expect(mocks.save).toHaveBeenCalledExactlyOnceWith(body.data);
   });
 
+  it.each(["period", "campaigns", "campaignInsights"] as const)("sanitizes Error and non-Error %s failures across response/cache/history", async (source) => {
+    const secret = "synthetic-private-token";
+    const detail = `provider diagnostic https://provider.invalid/?access_token=${secret}`;
+    for (const failure of [new Error(detail), detail, { message: detail, token: secret }]) {
+      vi.clearAllMocks();
+      if (source === "period") mocks.insights.mockRejectedValueOnce(failure);
+      if (source === "campaigns") mocks.campaigns.mockRejectedValueOnce(failure);
+      if (source === "campaignInsights") {
+        mocks.campaigns.mockResolvedValueOnce([{ id: "test-campaign", name: "Test" }]);
+        mocks.campaignInsights.mockRejectedValueOnce(failure);
+      }
+      const response = await route.POST();
+      const body = await response.json();
+      expect(response.status).toBe(200);
+      expect(body.data.generationMode).toBe("blocked");
+      expect(body.data.dataGaps).toHaveLength(1);
+      expect(body.data.dataGaps[0]).toContain(": Không lấy được dữ liệu nguồn");
+      expect(mocks.ai).not.toHaveBeenCalled();
+      expect(mocks.timeout).not.toHaveBeenCalled();
+      expect(mocks.save).toHaveBeenCalledExactlyOnceWith(body.data);
+      expect(engine.getCachedBriefing()).toEqual(body.data);
+      const cached = await route.GET();
+      for (const value of [body, await cached.json(), mocks.save.mock.calls, vi.mocked(console.error).mock.calls]) {
+        const serialized = JSON.stringify(value);
+        expect(serialized).not.toContain(secret);
+        expect(serialized).not.toContain("provider diagnostic");
+        expect(serialized).not.toContain("provider.invalid");
+      }
+    }
+  });
+
   it.each(["GET", "POST"] as const)("%s falls back when the mocked AI fails", async (method) => {
-    mocks.ai.mockRejectedValue(new Error("Synthetic AI failure"));
+    mocks.ai.mockRejectedValue(new Error("https://provider.invalid/?token=synthetic-ai-secret"));
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const response = await route[method]();
     const body = await response.json();
     expect(response.status).toBe(200);
     expect(body.data.generationMode).toBe("fallback");
     expect(body.data.aiSummary).toContain("Bản rút gọn");
+    expect(JSON.stringify([body, mocks.save.mock.calls, vi.mocked(console.warn).mock.calls])).not.toContain("synthetic-ai-secret");
     expect(mocks.ai).toHaveBeenCalledOnce();
     expect(mocks.save).toHaveBeenCalledExactlyOnceWith(body.data);
   });
@@ -179,6 +211,7 @@ describe("morning briefing real route + generation integration (mock boundaries)
     expect(await response.json()).toEqual({ success: false, error: "libcase.r.mb.2" });
     expect(mocks.ai).not.toHaveBeenCalled();
     expect(mocks.save).not.toHaveBeenCalled();
+    expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain("Synthetic internal diagnostic");
   });
 
   it("history write failure preserves successful response and cache", async () => {
@@ -189,5 +222,6 @@ describe("morning briefing real route + generation integration (mock boundaries)
     expect(body.success).toBe(true);
     expect(engine.getCachedBriefing()).toEqual(body.data);
     expect(console.error).toHaveBeenCalled();
+    expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain("Synthetic disk failure");
   });
 });

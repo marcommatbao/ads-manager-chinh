@@ -58,7 +58,7 @@ async function build(force: boolean) {
   try {
     await saveBriefing(fresh);
   } catch (err) {
-    console.error("[automation/morning-briefing] lưu lịch sử lỗi:", err);
+    console.error("[automation/morning-briefing] history_write_failed", err instanceof Error ? "error" : "non_error");
   }
   return { data: fresh, cached: false };
 }
@@ -74,7 +74,7 @@ export async function GET() {
     return NextResponse.json({ success: true, data, cached });
   } catch (err) {
     // Only translated configuration errors are public; other diagnostics stay server-side.
-    console.error("[automation/morning-briefing GET]", err);
+    console.error("[automation/morning-briefing GET] generation_failed", err instanceof Error ? "error" : "non_error");
     return NextResponse.json({ success: false, error: publicGenerationError(err, t) }, { status: 502 });
   }
 }
@@ -105,7 +105,7 @@ export async function POST() {
     const { data } = await build(true);
     return NextResponse.json({ success: true, data, cached: false });
   } catch (err) {
-    console.error("[automation/morning-briefing POST]", err);
+    console.error("[automation/morning-briefing POST] generation_failed", err instanceof Error ? "error" : "non_error");
     return NextResponse.json({ success: false, error: publicGenerationError(err, t) }, { status: 502 });
   }
 }

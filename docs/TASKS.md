@@ -22,3 +22,13 @@
 
 - Giai đoạn 4 forecast/budget pacing.
 - Automatic campaign mutation or budget application.
+
+## Bounded Gate 3 privacy follow-up — 2026-11-21
+
+- [x] Replace raw provider diagnostics in successful blocked briefing gaps with fixed source wording; retain only safe source/category/Error classification in engine logs.
+- [x] Remove raw AI fallback exception logging; preserve healthy/fallback/blocked behavior.
+- [x] Normalize diagnostic gap/note fields on history write and legacy read; test both boundaries without claiming an on-disk historical migration.
+- [x] Add synthetic secret/token-URL regressions for Error and non-Error source failures across API JSON, cache, history handoff, and source logs; focused suites 32/32 PASS.
+- [x] Main: independently reviewed edits; full suite 230 PASS / 71 skipped, final route/history 25 PASS, TypeScript/scoped lint/build PASS. Worker wrapper failed after leaving edits; main verification is authoritative.
+- [x] Sanitize fatal generation/history-write route logging and add regression assertions; history test data isolated under temp directory.
+- [ ] Runtime authenticated staging/browser acceptance.

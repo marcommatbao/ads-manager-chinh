@@ -321,3 +321,11 @@ Tổng điểm có trọng số bằng nhau = 60%. Ưu tiên kế tiếp: deploy
 - Gate 3 thêm 19 route integration tests qua engine thật, mock provider/auth/AI boundary: unauthorized/disabled/cache/throttle không gọi generation khi bị chặn; critical source failure không gọi AI; healthy source là positive control; fallback/history handoff được kiểm.
 - GET/POST generation errors không được nhận diện cấu hình trả generic message thay vì diagnostic gốc. Known configuration guidance được giữ. Source-error text trong successful blocked dataGaps chưa được làm sạch trong nhóm này, không coi là universal sanitization.
 - Full regression: 40 files / 226 tests PASS, 71 skipped. TypeScript/scoped ESLint/diff check PASS. Production build PASS (exit 0). Chưa runtime acceptance/deploy; Coder external-auth write handshake vẫn HTTP 403, credential tạm của đợt trước đã xóa nên chưa push nhóm mới.
+
+## Gate 3 diagnostic privacy follow-up — 2026-11-21
+
+- Source failures expose only fixed source/unavailable wording; Error/string/object diagnostic payloads are not stringified into gaps or logs. AI fallback and route generation/history-write logs use fixed categories.
+- History normalizes dataGaps/evidence.note on write and legacy read. Reads do not migrate deployed files; a later successful save normalizes retained entries. Not a general redaction of every snapshot field.
+- Added synthetic secret and token-URL regressions for API/cache/history handoff/logs; history fixture now uses isolated temp directories, not repository data/.
+- Full suite 40 files / 230 tests PASS, 71 skipped; final route/history rerun 25/25 PASS. TypeScript, scoped ESLint, diff check and production build PASS (exit 0). Worker wrapper ended codex_turn_failed after edits; main independently reviewed and verified results.
+- Push uses dedicated repo deploy key via git push-github; Coder GIT_SSH_COMMAND must not override it. Gate 3 browser/runtime acceptance and transactional coordinator remain pending; no provider write, feature activation or deployment performed.

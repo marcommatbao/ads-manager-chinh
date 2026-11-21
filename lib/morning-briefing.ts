@@ -446,9 +446,9 @@ export async function generateMorningBriefing(): Promise<MorningBriefing> {
     evidence.push({ id, source: "meta", from, to, readAt, status, critical: status === "unavailable", note });
   };
   const noteGap = (label: string, err: unknown) => {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[MorningBriefing] ${label} lỗi:`, msg);
-    dataGaps.push(`${label}: ${msg}`);
+    // Never inspect/stringify provider errors: messages, URLs and custom fields may contain credentials.
+    console.error(`[MorningBriefing] ${label}: source_unavailable`, err instanceof Error ? "error" : "non_error");
+    dataGaps.push(`${label}: Không lấy được dữ liệu nguồn`);
   };
 
   // 1. Fetch insights in parallel
@@ -613,7 +613,7 @@ export async function generateMorningBriefing(): Promise<MorningBriefing> {
         aiSummary = generateFallbackSummary(yesterday, last7d, alerts, anomalies, forecast);
       }
     } catch (err) {
-      console.warn("[MorningBriefing] AI summary failed:", err instanceof Error ? err.message : err);
+      console.warn("[MorningBriefing] AI summary failed: ai_unavailable", err instanceof Error ? "error" : "non_error");
       aiSummary = generateFallbackSummary(yesterday, last7d, alerts, anomalies, forecast);
     }
   } else {

@@ -1,10 +1,23 @@
 import fs from "node:fs";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
-import { getBriefingHistory, saveBriefing } from "@/lib/morning-briefing-history";
+import os from "node:os";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type * as HistoryStore from "@/lib/morning-briefing-history";
 import type { MorningBriefing } from "@/lib/morning-briefing";
 
-const historyPath = path.join(process.cwd(), "data", "morning-briefing-history.json");
+let historyPath: string;
+let fixtureDir: string;
+let getBriefingHistory: typeof HistoryStore.getBriefingHistory;
+let saveBriefing: typeof HistoryStore.saveBriefing;
+
+beforeEach(async () => {
+  vi.resetModules();
+  fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), "briefing-history-test-"));
+  fs.mkdirSync(path.join(fixtureDir, "data"));
+  vi.spyOn(process, "cwd").mockReturnValue(fixtureDir);
+  historyPath = path.join(fixtureDir, "data", "morning-briefing-history.json");
+  ({ getBriefingHistory, saveBriefing } = await import("@/lib/morning-briefing-history"));
+});
 
 function briefing(generatedAt: string): MorningBriefing {
   return {
@@ -27,7 +40,8 @@ function briefing(generatedAt: string): MorningBriefing {
 }
 
 afterEach(() => {
-  try { fs.unlinkSync(historyPath); } catch { /* test file may not exist */ }
+  vi.restoreAllMocks();
+  if (fixtureDir) fs.rmSync(fixtureDir, { recursive: true, force: true });
 });
 
 describe("morning briefing history", () => {
@@ -41,6 +55,28 @@ describe("morning briefing history", () => {
       "2026-11-18T03:00:00.000Z",
       "2026-11-18T02:00:00.000Z",
     ]);
+  });
+
+  it("normalizes private diagnostics on write and legacy reads without mutating input", async () => {
+    const snapshot = briefing("2026-11-18T03:00:00.000Z");
+    const privateDetail = "https://provider.invalid/?access_token=synthetic-history-secret";
+    snapshot.dataGaps = [`số liệu hôm qua: ${privateDetail}`, privateDetail];
+    snapshot.evidence = [{ id: "số liệu hôm qua", source: "meta", from: snapshot.date, to: snapshot.date,
+      readAt: snapshot.generatedAt, critical: true, status: "unavailable", note: privateDetail }];
+    await saveBriefing(snapshot);
+    expect(JSON.stringify(snapshot)).toContain(privateDetail);
+    expect(fs.readFileSync(historyPath, "utf8")).not.toContain(privateDetail);
+
+    // Simulate a record written before normalization was introduced.
+    fs.writeFileSync(historyPath, JSON.stringify({ entries: [snapshot] }));
+    const [normalized] = getBriefingHistory();
+    expect(normalized.dataGaps).toEqual(["số liệu hôm qua: Không lấy được dữ liệu nguồn", "Không lấy được dữ liệu nguồn"]);
+    expect(normalized.evidence[0].note).toBe("Không lấy được dữ liệu nguồn");
+    expect(JSON.stringify(normalized)).not.toContain(privateDetail);
+    // Read normalization does not claim an on-disk historical migration.
+    expect(fs.readFileSync(historyPath, "utf8")).toContain(privateDetail);
+    await saveBriefing(briefing("2026-11-18T04:00:00.000Z"));
+    expect(fs.readFileSync(historyPath, "utf8")).not.toContain(privateDetail);
   });
 
   it("caps history at 90 entries", async () => {
