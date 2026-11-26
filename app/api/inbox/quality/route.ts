@@ -23,16 +23,17 @@ export async function POST(request: NextRequest) {
   const b = await request.json().catch(() => null)
   const co = requireCompany(u.value, b?.company)
   if (!co.ok) return co.response
-  if (!b || !["record", "observe"].includes(b.operation) || typeof b.registryId !== "string" || !/^[a-f0-9]{64}$/.test(b.registryId)
+  if (!b || !["record", "observe", "new_cycle"].includes(b.operation) || typeof b.registryId !== "string" || !/^[a-f0-9]{64}$/.test(b.registryId)
     || !(b.expectedRevision === null || typeof b.expectedRevision === "string" && /^[a-f0-9-]{36}$/.test(b.expectedRevision))
-    || Object.keys(b).some(k => !["company", "operation", "registryId", "expectedRevision"].includes(k))) {
+    || (b.operation === "new_cycle" ? b.confirmed !== true : b.confirmed !== undefined)
+    || Object.keys(b).some(k => !["company", "operation", "registryId", "expectedRevision", "confirmed"].includes(k))) {
     return NextResponse.json({ success: false, code: "invalidInput" }, { status: 400 })
   }
   try {
     // Record only the evidence currently presented by the server, never an old healthy/changed claim.
-    if (b.operation === "record") {
+    if (b.operation === "record" || b.operation === "new_cycle") {
       const [current] = await qualityBriefs([co.value])
-      if (current.reference.registryId !== b.registryId && current.action?.baseline.registryId !== b.registryId) throw new QualityWorkflowError(409, "evidenceChanged")
+      if (current.reference.registryId !== b.registryId && current.action?.baseline.registryId !== b.registryId && !current.history?.some(a => a.baseline.registryId === b.registryId)) throw new QualityWorkflowError(409, "evidenceChanged")
     }
     const action = await writeQualityAction(co.value, b, actorOf(u.value))
     return NextResponse.json({ success: true, action }, { headers: { "Cache-Control": "no-store" } })

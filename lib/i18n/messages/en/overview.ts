@@ -4,6 +4,13 @@ import type { overview as vi } from "../vi/overview"
 
 export const overview: Translation<typeof vi> = {
   // Action workflow wording proposal — pending BA review.
+  "overview.qualityWorkflow.newCycle": "Record a new external-action cycle",
+  "overview.qualityWorkflow.confirmCycle": "Confirm a new external action against the displayed source? The prior cycle is preserved; this does not resolve it.",
+  "overview.qualityWorkflow.history": "Previous cycles (latest 5)",
+  "overview.qualityWorkflow.not_due": "Not due",
+  "overview.qualityWorkflow.due": "Due · manual observation needed",
+  "overview.qualityWorkflow.observed": "Suitable source observation collected · no causal conclusion",
+  "overview.qualityWorkflow.overdue": "Overdue · no suitable observation",
   "overview.qualityWorkflow.title": "Action brief · Google source health",
   "overview.qualityWorkflow.scope": "Global connector check; does not verify company, account or campaign access.",
   "overview.qualityWorkflow.independent": "Derived from Inbox evidence, independent of the AI briefing.",
@@ -30,9 +37,9 @@ export const overview: Translation<typeof vi> = {
   "overview.qualityWorkflow.no_new_read": "No new source read after action",
   "overview.qualityWorkflow.stale_or_unavailable": "Stale, missing or invalid source",
   "overview.qualityWorkflow.fresh_post_action": "Fresh read after recording",
-  "overview.qualityWorkflow.pending": "Day 3/7 checkpoints are unevaluated; no budget benefit conclusion.",
+  "overview.qualityWorkflow.pending": "Manual snapshot reads only; no scheduled check and no budget benefit conclusion.",
   "overview.qualityWorkflow.disclaimer": "Observation does not prove execution or causal benefit. Remains under observation; never auto-resolved.",
-  "overview.qualityWorkflow.checkpoint": "Day {day} · pending assessment · due",
+  "overview.qualityWorkflow.checkpoint": "Day {day} · due",
 
   // P3 wording proposal pending BA review.
   "overview.inboxQuality.label": "Source data quality",

@@ -8,9 +8,9 @@ import { snapshotAllConnectors } from "@/lib/connectors/engine"
 import type { ConnectorHealthRecord } from "@/lib/connectors/types"
 import { projectConnectorEvidence } from "@/lib/connectors/evidence"
 import { fromGoogleHealth } from "./evidence"
-import type { HealthAction, HealthObservation, HealthReference, QualityBrief } from "./quality-workflow-types"
+import type { HealthAction, HealthObservation, HealthReference, QualityBrief, HealthCheckpoint } from "./quality-workflow-types"
 
-const TTL = 15 * 60_000, KEEP = 90 * 86_400_000, CAP = 2000
+const TTL = 15 * 60_000, CAP = 2000
 const file = () => path.join(process.cwd(), "data", "inbox-quality-workflow.json")
 interface Data { version: 1; references: HealthReference[]; actions: HealthAction[] }
 export class QualityWorkflowError extends Error {
@@ -29,13 +29,20 @@ function intactReference(ref: HealthReference): boolean {
 function read(): Data {
   try {
     const data = JSON.parse(fs.readFileSync(file(), "utf8")) as Data
-    if (data.version !== 1 || !Array.isArray(data.references) || !Array.isArray(data.actions)
+    if (Object.keys(data).some(k => !["version", "references", "actions"].includes(k)) || data.version !== 1 || !Array.isArray(data.references) || !Array.isArray(data.actions)
       || data.references.length > CAP || data.actions.length > CAP || data.references.some(r => !intactReference(r))
-      || data.actions.some(a => !a.id || !a.revision || !a.actor || !Number.isFinite(Date.parse(a.actionAt))
+      || new Set(data.actions.map(a => a.id)).size !== data.actions.length
+      || data.actions.some(a => Object.keys(a).some(k => !["id", "company", "key", "revision", "baseline", "actor", "actionAt", "execution", "observations", "previousRevision"].includes(k))
+        || (a.previousRevision !== undefined && typeof a.previousRevision !== "string") || !a.id || !a.revision || !a.actor || !Number.isFinite(Date.parse(a.actionAt))
         || a.execution !== "externally_recorded_unverified" || !intactReference(a.baseline)
         || a.baseline.company !== a.company || a.baseline.key !== a.key || !Array.isArray(a.observations) || a.observations.length > 30
-        || a.observations.some(o => !intactReference(o.ref) || o.ref.company !== a.company || o.ref.key !== a.key
+        || a.observations.some(o => Object.keys(o).some(k => !["ref", "at", "actor", "result", "reason"].includes(k)) || !intactReference(o.ref) || o.ref.company !== a.company || o.ref.key !== a.key
           || !o.actor || !Number.isFinite(Date.parse(o.at)) || !["listing_observed", "issue_observed", "inconclusive"].includes(o.result)))) throw new Error()
+    for (let index = 0; index < data.actions.length; index++) {
+      const action = data.actions[index]
+      const prior = data.actions.slice(0, index).filter(a => a.company === action.company && a.key === action.key).at(-1)
+      if ((prior && action.previousRevision !== prior.revision) || (!prior && action.previousRevision !== undefined)) throw new Error()
+    }
     return data
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === "ENOENT") return { version: 1, references: [], actions: [] }
@@ -47,7 +54,6 @@ async function change<T>(now: Date, fn: (data: Data) => T): Promise<T> {
     const data = read()
     const before = JSON.stringify(data)
     data.references = data.references.filter(r => Date.parse(r.expiresAt) > +now)
-    data.actions = data.actions.filter(a => +now - Date.parse(a.actionAt) <= KEEP)
     const result = fn(data)
     if (data.references.length > CAP || data.actions.length > CAP) reject("capacity", 503)
     const serialized = JSON.stringify(data)
@@ -84,8 +90,10 @@ export async function qualityBriefs(companies: string[], now = new Date(), snaps
       ref = { ...payload, registryId: hash(payload) }
       data.references.push(ref)
     }
+    const cycles = data.actions.filter(a => a.company === company && a.key === key)
+    const action = cycles.at(-1) ?? null
     return { version: "google-source-health-v1", company, key, reference: ref,
-      action: data.actions.find(a => a.company === company && a.key === key) ?? null }
+      action, history: cycles.slice(0, -1).slice(-5).reverse(), checkpoints: action ? healthCheckpoints(action, now) : [] }
   }))
 }
 /** Equality is not execution proof or causal improvement. No account/campaign outcome. */
@@ -94,26 +102,50 @@ export function assessHealth(baseline: HealthReference, current: HealthReference
     || current.scope !== baseline.scope || current.sourceRef !== baseline.sourceRef) reject("referenceMismatch")
   const at = current.readAt ? Date.parse(current.readAt) : NaN
   if (!Number.isFinite(Date.parse(actionAt)) || Date.parse(actionAt) > +now || !Number.isFinite(+now)) return { result: "inconclusive", reason: "stale_or_unavailable" }
-  if (!Number.isFinite(at) || at > +now || +now - at >= 3_600_000 || current.health.freshness !== "recent") return { result: "inconclusive", reason: "stale_or_unavailable" }
+  if (!Number.isFinite(at) || at > Date.parse(current.capturedAt) || at > +now || +now - at >= 3_600_000 || current.health.freshness !== "recent") return { result: "inconclusive", reason: "stale_or_unavailable" }
   if (at <= Date.parse(actionAt) || (baseline.readAt && at <= Date.parse(baseline.readAt)) || (previousReadAt && at <= Date.parse(previousReadAt))) return { result: "inconclusive", reason: "no_new_read" }
   return current.health.outcome === "listing" ? { result: "listing_observed", reason: "fresh_post_action" }
     : current.health.outcome === "failed" || current.evidence ? { result: "issue_observed", reason: "fresh_post_action" }
     : { result: "inconclusive", reason: "stale_or_unavailable" }
 }
-export interface WorkflowInput { operation: "record" | "observe"; registryId: string; expectedRevision: string | null }
+/** Only explicitly collected, suitable post-deadline snapshots can satisfy a checkpoint. */
+export function healthCheckpoints(action: HealthAction, now: Date): HealthCheckpoint[] {
+  return ([3, 7] as const).map(day => {
+    const due = Date.parse(action.actionAt) + day * 86_400_000
+    const attempts = action.observations.filter(o => Date.parse(o.at) >= due && Date.parse(o.at) <= +now)
+    const observed = attempts.some(o => o.result !== "inconclusive"
+      && Date.parse(o.ref.readAt ?? "") >= due && Date.parse(o.ref.readAt ?? "") > Date.parse(action.actionAt)
+      && assessHealth(action.baseline, o.ref, action.actionAt, new Date(o.at)).result !== "inconclusive")
+    const status = +now < due ? "not_due" : observed ? "observed" : attempts.length ? "inconclusive" : "due"
+    return { day, dueAt: new Date(due).toISOString(), status, overdue: +now > due && !observed }
+  })
+}
+// Capture/expiry/freshness change on re-fetch; source identity does not.
+const sourceIdentity = (ref: HealthReference) => hash([ref.company, ref.key, ref.scope, ref.sourceRef, ref.readAt, ref.health.outcome])
+export interface WorkflowInput { operation: "record" | "observe" | "new_cycle"; registryId: string; expectedRevision: string | null }
 export async function writeQualityAction(company: string, input: WorkflowInput, actor: string, now = new Date()): Promise<HealthAction> {
   return change(now, data => {
     const ref = resolve(data, input.registryId, company, now)
-    const existing = data.actions.find(a => a.company === company && a.key === ref.key)
+    const cycles = data.actions.filter(a => a.company === company && a.key === ref.key)
+    const existing = cycles.at(-1)
+    if (input.operation === "new_cycle") {
+      const replay = cycles.find(a => a.previousRevision === input.expectedRevision && sourceIdentity(a.baseline) === sourceIdentity(ref))
+      if (replay) return replay
+    }
     // Retries return the immutable prior write without reapplying it, even with the old revision.
-    if (input.operation === "record" && existing?.baseline.registryId === ref.registryId) return existing
-    if (input.operation === "observe" && existing?.observations.some(o => o.ref.registryId === ref.registryId)) return existing
+    if (input.operation === "record" && cycles[0] && sourceIdentity(cycles[0].baseline) === sourceIdentity(ref)) return cycles[0]
+    if (input.operation === "observe" && existing?.observations.some(o => sourceIdentity(o.ref) === sourceIdentity(ref))) return existing
     if ((existing?.revision ?? null) !== input.expectedRevision) reject("revisionConflict")
-    if (input.operation === "record") {
-      if (existing) reject("alreadyRecorded")
+    if (input.operation === "record" || input.operation === "new_cycle") {
+      if (input.operation === "record" && existing) reject("alreadyRecorded")
+      if (input.operation === "new_cycle" && !existing) reject("actionNotFound", 404)
+      if (cycles.length >= 20) reject("cycleLimit", 503)
+      if (input.operation === "new_cycle" && (cycles.some(a => sourceIdentity(a.baseline) === sourceIdentity(ref))
+        || !ref.readAt || !Number.isFinite(Date.parse(ref.readAt)) || Date.parse(ref.readAt) > +now
+        || Date.parse(ref.readAt) <= Date.parse(existing!.baseline.readAt ?? existing!.actionAt))) reject("sourceUnchanged")
       if (!ref.evidence || ref.health.outcome === "disabled") reject("notEligible")
       const action: HealthAction = { id: randomUUID(), company, key: ref.key, revision: randomUUID(), baseline: ref,
-        actor, actionAt: now.toISOString(), execution: "externally_recorded_unverified", observations: [] }
+        ...(existing ? { previousRevision: existing.revision } : {}), actor, actionAt: now.toISOString(), execution: "externally_recorded_unverified", observations: [] }
       data.actions.push(action)
       return action
     }

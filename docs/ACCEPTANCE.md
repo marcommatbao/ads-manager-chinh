@@ -479,3 +479,58 @@ other than the overview page. Overview ESLint reports four pre-existing errors
 running the same lint against `git show HEAD:app/(dashboard)/page.tsx` confirmed
 the identical four errors before this patch. No lint guards were removed.
 `git diff --check` passed. The existing Vite config-loader notice remains.
+
+## Recurring Google source-health cycles and manual DAY3/7 — 2026-11-26
+
+- Legacy `google-source-health-v1` response and version-1 disk data remain readable;
+  additive `history` (latest five previous cycles), `checkpoints`, and optional
+  `previousRevision` require no migration. `action` is the latest cycle.
+- Explicit POST `new_cycle` requires `company`, `registryId`, `expectedRevision`
+  and `confirmed: true`. UI uses a deliberate native confirmation before sending
+  the displayed server reference; changed evidence requires reload/reconfirmation.
+  Editor/company checks and input whitelist remain mandatory.
+- Each company/key holds at most 20 cycles, each with at most 30 observations;
+  store-wide action/reference cap remains 2,000. Actions never age out or get
+  replaced. Capacity fails closed; only expired reference registry entries are
+  pruned. No automatic reset, archive, migration, resolution or new cycle.
+- CAS and atomic writes serialize within one process only. New-cycle retry uses
+  predecessor revision plus source identity, excluding capture expiry/freshness,
+  so re-fetch and concurrent actors cannot duplicate a cycle for the same read.
+  New cycles require a newer source read and an eligible source warning.
+- DAY3/7 are elapsed UTC 72/168-hour deadlines from server `actionAt`, independent
+  of display timezone. `not_due`, `due`, `inconclusive`, `observed` and separate
+  `overdue` describe manual collection. A suitable observation must have been
+  explicitly recorded at/after the deadline, with a fresh matching source read
+  at/after deadline and strictly after action. Stale/future/unchanged reads do
+  not satisfy checkpoints. A Google listing observation never proves execution,
+  campaign access, budget benefit, causal improvement or resolution.
+- No scheduler, job, delivery, provider check or provider write was added.
+  Reload reads existing engine snapshots; it does not collect observations.
+
+Browser fixture shape: authenticated editor/viewer scoped to `MBC`; GET
+`/api/inbox` includes `{ actionBriefs: [{ version: "google-source-health-v1",
+company: "MBC", key: "MBC:health:connection_google_ads", reference: HealthReference,
+action: HealthAction | null, history: HealthAction[], checkpoints: [{ day: 3 | 7,
+dueAt: ISO8601, status: "not_due" | "due" | "inconclusive" | "observed",
+overdue: boolean }] }], canEdit: boolean }`. Use full server-generated references
+and actions, not hand-edited hashes. GET `/api/inbox/quality?company=MBC` returns
+`{ success: true, brief, canEdit }`; POST returns `{ success: true, action }`.
+The component uses native `<details>/<summary>` for keyboard history navigation,
+semantic theme tokens, wrapping identifiers and native confirm for new cycles.
+Browser interaction/responsive checks were not run in this bundle; component
+coverage renders actual vi/en markup. No full typecheck/build or deployment is
+claimed; main/user owns the redeploy bundle and broader release verification.
+
+Focused verification for this bundle: 36 tests passed across
+`inbox-quality-workflow`, `inbox-quality-ui`, `inbox-quality-boundary` and
+`inbox-quality`; ESLint passed for the seven changed TypeScript/TSX files and
+`git diff --check` passed. Tests use real routes and temporary file-backed stores,
+with mocked authentication and connector snapshots, not live provider access.
+
+Main final full regression491 PASS/71 skipped/0 failed after correcting a legacy
+fixture chronology (source read cannot follow reference capture) and adding its
+negative control. TypeScript/scoped lint passed. Static real-component/CSS browser
+fixtures30/30 PASS with prior-cycle disclosure keyboard expansion, responsive
+375/768/1280, no overflow/page errors and mobile screenshot review. No hydrated
+new-cycle confirmation/write or live provider/redeploy verification; final build
+and publish results tracked in NEXT.

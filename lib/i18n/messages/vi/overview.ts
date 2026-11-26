@@ -1,6 +1,13 @@
 // Khu "overview" (song ngữ GĐ2) — bản gốc tiếng Việt. Khoá dạng "overview.tên". Giữ NGUYÊN câu tiếng Việt đang hiển thị.
 export const overview = {
   // Action workflow wording proposal — pending BA review.
+  "overview.qualityWorkflow.newCycle": "Ghi nhận vòng xử lý bên ngoài mới",
+  "overview.qualityWorkflow.confirmCycle": "Xác nhận hành động bên ngoài mới theo nguồn đang hiển thị? Vòng cũ được giữ nguyên và không được xem là đã khắc phục.",
+  "overview.qualityWorkflow.history": "Các vòng trước (5 vòng gần nhất)",
+  "overview.qualityWorkflow.not_due": "Chưa đến hạn",
+  "overview.qualityWorkflow.due": "Đến hạn · cần quan sát thủ công",
+  "overview.qualityWorkflow.observed": "Đã ghi nhận quan sát nguồn phù hợp · không kết luận nhân quả",
+  "overview.qualityWorkflow.overdue": "Quá hạn · chưa có quan sát phù hợp",
   "overview.qualityWorkflow.title": "Bản tin hành động · sức khỏe nguồn Google",
   "overview.qualityWorkflow.scope": "Kiểm tra connector toàn cục; không xác nhận quyền đọc công ty, tài khoản hay chiến dịch.",
   "overview.qualityWorkflow.independent": "Bản tin từ bằng chứng Inbox, độc lập với bản tin AI.",
@@ -27,9 +34,9 @@ export const overview = {
   "overview.qualityWorkflow.no_new_read": "Chưa có lần đọc nguồn mới sau hành động",
   "overview.qualityWorkflow.stale_or_unavailable": "Nguồn cũ, thiếu hoặc không hợp lệ",
   "overview.qualityWorkflow.fresh_post_action": "Lần đọc mới sau ghi nhận",
-  "overview.qualityWorkflow.pending": "Mốc ngày 3/7 chưa được đánh giá; không có kết luận hiệu quả ngân sách.",
+  "overview.qualityWorkflow.pending": "Chỉ đọc snapshot thủ công; không có kiểm tra theo lịch hay kết luận hiệu quả ngân sách.",
   "overview.qualityWorkflow.disclaimer": "Quan sát không chứng minh ai đã thực thi hoặc tác động nhân quả. Việc vẫn đang theo dõi; không tự đóng.",
-  "overview.qualityWorkflow.checkpoint": "Ngày {day} · chưa đánh giá · hạn",
+  "overview.qualityWorkflow.checkpoint": "Ngày {day} · hạn",
 
   // P3 read-only source-quality wording — proposed, pending BA review.
   "overview.inboxQuality.label": "Chất lượng nguồn dữ liệu",

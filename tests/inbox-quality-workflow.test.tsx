@@ -134,7 +134,7 @@ it("healthy baseline is ineligible; fresh failure remains issue_observed, not re
   expect(observed.observations[0].result).toBe("issue_observed")
   expect(observed.execution).toBe("externally_recorded_unverified")
 })
-it("caps observations and prunes history at 90 days with expired references", async () => {
+it("caps observations and preserves action history beyond 90 days", async () => {
   const [brief] = await workflow.qualityBriefs(["MBC"])
   let action = await workflow.writeQualityAction("MBC", { operation: "record", registryId: brief.reference.registryId, expectedRevision: null }, "fixture")
   for (let n = 1; n <= 30; n++) {
@@ -147,10 +147,10 @@ it("caps observations and prunes history at 90 days with expired references", as
   await expect(workflow.writeQualityAction("MBC", { operation: "observe", registryId: next.reference.registryId, expectedRevision: action.revision }, "fixture")).rejects.toMatchObject({ code: "observationLimit" })
   vi.setSystemTime(new Date(+start + 91 * 86_400_000)); health()
   const [expired] = await workflow.qualityBriefs(["MBC"])
-  expect(expired.action).toBeNull()
+  expect(expired.action).toEqual(action)
   const saved = JSON.parse(fs.readFileSync(path.join(dir, "data/inbox-quality-workflow.json"), "utf8"))
   expect(saved.references).toHaveLength(1)
-  expect(saved.actions).toHaveLength(0)
+  expect(saved.actions).toHaveLength(1)
 })
 it("rejects future-captured references and throttles a distinct observation without changing history", async () => {
   const [future] = await workflow.qualityBriefs(["MBC"], new Date(+start + 60_000))
@@ -166,9 +166,10 @@ it("rejects future-captured references and throttles a distinct observation with
 it("does not count a reread of an older snapshot as a new health observation", async () => {
   const [brief] = await workflow.qualityBriefs(["MBC"])
   const at = new Date(+start + 60_000).toISOString(), now = new Date(+start + 120_000)
-  const current = { ...brief.reference, readAt: at }
+  const current = { ...brief.reference, readAt: at, capturedAt: now.toISOString() }
   expect(workflow.assessHealth(brief.reference, current, start.toISOString(), now, at)).toEqual({ result: "inconclusive", reason: "no_new_read" })
   expect(workflow.assessHealth(brief.reference, current, "invalid", now).result).toBe("inconclusive")
+  expect(workflow.assessHealth(brief.reference, { ...current, capturedAt: start.toISOString() }, start.toISOString(), now)).toEqual({ result: "inconclusive", reason: "stale_or_unavailable" })
 })
 it("Inbox evidence and brief use one server read even when the Google record is absent", async () => {
   mocks.snapshot.mockReturnValue({})
@@ -177,4 +178,103 @@ it("Inbox evidence and brief use one server read even when the Google record is 
   expect(mocks.snapshot).toHaveBeenCalledTimes(1)
   expect(data.items[0].evidence).toEqual(data.actionBriefs[0].reference.evidence)
   expect(data.items[0].evidenceRef.registryId).toBe(data.actionBriefs[0].reference.registryId)
+})
+
+it("route creates two immutable cycles; concurrent actors and reference re-fetch replay once; stale revisions fail", async () => {
+  const brief = (await (await get()).json()).brief
+  const first = (await (await post({ company: "MBC", operation: "record", registryId: brief.reference.registryId, expectedRevision: null })).json()).action
+  const firstBytes = JSON.stringify(first)
+  vi.setSystemTime(new Date(+start + 60_000)); health("auth_error", new Date().toISOString())
+  const next = (await (await get()).json()).brief
+  const input = { company: "MBC", operation: "new_cycle", confirmed: true, registryId: next.reference.registryId, expectedRevision: first.revision }
+  const responses = await Promise.all([post(input), post(input)])
+  expect(responses.map(r => r.status)).toEqual([200, 200])
+  const second = (await responses[0].json()).action
+  expect((await responses[1].json()).action).toEqual(second)
+  expect(second.id).not.toBe(first.id)
+  vi.setSystemTime(new Date(+start + 16 * 60_000))
+  const fetched = (await (await get()).json()).brief
+  expect(fetched.reference.registryId).not.toBe(input.registryId)
+  expect((await (await post({ ...input, registryId: fetched.reference.registryId })).json()).action).toEqual(second)
+  expect(fetched.history).toEqual([first]); expect(JSON.stringify(fetched.history[0])).toBe(firstBytes)
+  expect((await post({ ...input, registryId: fetched.reference.registryId, expectedRevision: second.revision })).status).toBe(409)
+  health("auth_error", new Date().toISOString())
+  const third = (await (await get()).json()).brief
+  expect((await post({ ...input, registryId: third.reference.registryId })).status).toBe(409)
+  expect((await get("MBI")).status).toBe(403)
+  expect((await post({ ...input, company: "MBI" })).status).toBe(403)
+  expect((await post({ ...input, confirmed: false })).status).toBe(400)
+})
+it("DAY3/7 use UTC elapsed time and explicit suitable observations only", async () => {
+  const [brief] = await workflow.qualityBriefs(["MBC"])
+  let action = await workflow.writeQualityAction("MBC", { operation: "record", registryId: brief.reference.registryId, expectedRevision: null }, "fixture")
+  const due = +start + 3 * 86_400_000
+  expect(workflow.healthCheckpoints(action, new Date(due - 1))[0].status).toBe("not_due")
+  expect(workflow.healthCheckpoints(action, new Date(due))[0]).toMatchObject({ status: "due", overdue: false })
+  vi.setSystemTime(new Date(due + 1))
+  // New capture of an old source cannot satisfy the checkpoint.
+  health("healthy", new Date(due - 1).toISOString())
+  let [current] = await workflow.qualityBriefs(["MBC"])
+  action = await workflow.writeQualityAction("MBC", { operation: "observe", registryId: current.reference.registryId, expectedRevision: action.revision }, "fixture")
+  expect(workflow.healthCheckpoints(action, new Date())[0]).toMatchObject({ status: "inconclusive", overdue: true })
+  vi.setSystemTime(new Date(due + 60_000)); health("healthy", new Date().toISOString())
+  ;[current] = await workflow.qualityBriefs(["MBC"])
+  action = await workflow.writeQualityAction("MBC", { operation: "observe", registryId: current.reference.registryId, expectedRevision: action.revision }, "fixture")
+  expect(workflow.healthCheckpoints(action, new Date())[0]).toMatchObject({ status: "observed", overdue: false })
+  expect(workflow.healthCheckpoints(action, new Date())[1].status).toBe("not_due")
+  const day7 = new Date("2026-12-03T08:00:00+07:00")
+  expect(workflow.healthCheckpoints(action, day7)[1].status).toBe("due")
+  expect(action.execution).toBe("externally_recorded_unverified")
+})
+it("unknown stored arrays fail closed without rewriting bytes", async () => {
+  await get()
+  const filename = path.join(dir, "data/inbox-quality-workflow.json")
+  const data = JSON.parse(fs.readFileSync(filename, "utf8")); data.futureCycles = []
+  const bytes = JSON.stringify(data); fs.writeFileSync(filename, bytes)
+  expect((await get()).status).toBe(503)
+  expect(fs.readFileSync(filename, "utf8")).toBe(bytes)
+})
+
+it("retention caps fail closed and do not delete any live cycle", async () => {
+  let brief = (await (await get()).json()).brief
+  let action = (await (await post({ company: "MBC", operation: "record", registryId: brief.reference.registryId, expectedRevision: null })).json()).action
+  for (let n = 1; n < 20; n++) {
+    vi.setSystemTime(new Date(+start + n * 60_000)); health("auth_error", new Date().toISOString())
+    brief = (await (await get()).json()).brief
+    const response = await post({ company: "MBC", operation: "new_cycle", confirmed: true, registryId: brief.reference.registryId, expectedRevision: action.revision })
+    expect(response.status).toBe(200); action = (await response.json()).action
+  }
+  vi.setSystemTime(new Date(+start + 20 * 60_000)); health("auth_error", new Date().toISOString())
+  brief = (await (await get()).json()).brief
+  expect(brief.history).toHaveLength(5)
+  const filename = path.join(dir, "data/inbox-quality-workflow.json"), bytes = fs.readFileSync(filename, "utf8")
+  const response = await post({ company: "MBC", operation: "new_cycle", confirmed: true, registryId: brief.reference.registryId, expectedRevision: action.revision })
+  expect(response.status).toBe(503); expect((await response.json()).code).toBe("cycleLimit")
+  expect(fs.readFileSync(filename, "utf8")).toBe(bytes)
+  expect(JSON.parse(bytes).actions).toHaveLength(20)
+})
+it("same-process distinct actor CAS keeps one new cycle and freezes earlier observations", async () => {
+  const [brief] = await workflow.qualityBriefs(["MBC"])
+  const first = await workflow.writeQualityAction("MBC", { operation: "record", registryId: brief.reference.registryId, expectedRevision: null }, "one")
+  vi.setSystemTime(new Date(+start + 60_000)); health("auth_error", new Date().toISOString())
+  const [next] = await workflow.qualityBriefs(["MBC"])
+  const input = { operation: "new_cycle" as const, registryId: next.reference.registryId, expectedRevision: first.revision }
+  const [a, b] = await Promise.all([workflow.writeQualityAction("MBC", input, "one"), workflow.writeQualityAction("MBC", input, "two")])
+  expect(a).toEqual(b)
+  const [saved] = await workflow.qualityBriefs(["MBC"])
+  expect(saved.history).toEqual([first])
+  await expect(workflow.writeQualityAction("MBI", input, "two")).rejects.toMatchObject({ code: "referenceMismatch" })
+})
+it("day7 stale and future reads remain inconclusive; unchanged source never creates a new cycle", async () => {
+  const [brief] = await workflow.qualityBriefs(["MBC"])
+  let action = await workflow.writeQualityAction("MBC", { operation: "record", registryId: brief.reference.registryId, expectedRevision: null }, "one")
+  await expect(workflow.writeQualityAction("MBC", { operation: "new_cycle", registryId: brief.reference.registryId, expectedRevision: action.revision }, "one")).rejects.toMatchObject({ code: "sourceUnchanged" })
+  const due = +start + 7 * 86_400_000
+  for (const [offset, readOffset] of [[0, -3_600_000], [60_000, 120_000]]) {
+    vi.setSystemTime(new Date(due + offset)); health("healthy", new Date(due + readOffset).toISOString())
+    const [fresh] = await workflow.qualityBriefs(["MBC"])
+    action = await workflow.writeQualityAction("MBC", { operation: "observe", registryId: fresh.reference.registryId, expectedRevision: action.revision }, "one")
+    expect(action.observations.at(-1)?.result).toBe("inconclusive")
+    expect(workflow.healthCheckpoints(action, new Date())[1].status).toBe("inconclusive")
+  }
 })

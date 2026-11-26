@@ -23,6 +23,7 @@ export interface HealthObservation {
 }
 export interface HealthAction {
   id: string
+  previousRevision?: string
   company: string
   key: string
   revision: string
@@ -38,4 +39,13 @@ export interface QualityBrief {
   key: string
   reference: HealthReference
   action: HealthAction | null
+  history?: HealthAction[]
+  checkpoints?: HealthCheckpoint[]
+}
+
+export interface HealthCheckpoint {
+  day: 3 | 7
+  dueAt: string
+  status: "not_due" | "due" | "inconclusive" | "observed"
+  overdue: boolean
 }
