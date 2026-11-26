@@ -2,6 +2,13 @@
 
 Centralized dashboard to manage, analyze, and optimize Facebook Ads and Google Ads campaigns, powered by AI creative generation.
 
+## Kế hoạch nâng cấp sản phẩm
+
+- [Plan tổng hợp AdsCommand — 8 phase, acceptance và rollout](docs/ADSCOMMAND-UPGRADE-PLAN.md).
+- [Nguồn tham khảo Noti/GitHub và ma trận giấy phép](docs/ADSCOMMAND-RESEARCH-SOURCES.md).
+
+Đây là kế hoạch đề xuất dựa trên baseline ngày 26/11/2026; không phải xác nhận các capability đã triển khai hoặc được bật. Các plan cũ giữ làm lịch sử.
+
 ## Features
 
 - **Multi-Platform Support** — Facebook Ads + Google Ads in one dashboard
