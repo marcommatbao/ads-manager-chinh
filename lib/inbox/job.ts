@@ -21,17 +21,19 @@ import { queryFor } from "@/lib/nba/store"
 import { sendTeamsAlert } from "@/lib/teams-alert"
 import { fromPmax, fromSearch, fromMeta, fromHealth, fromBoard, fromNba, fromSplits, rankItems, pickDigest, KIND_LABEL, SOURCE_LABEL, type InboxItem, type InboxSource } from "./build"
 import { readSnapshot, saveSnapshot, readStates, viewItems, isOpen, type InboxSnapshot } from "./store"
+import { fromGoogleHealth, fromSourceErrors } from "./evidence"
+import { snapshotAllConnectors } from "@/lib/connectors/engine"
 import { companyIds } from "@/lib/companies"
 
 // Đợt 21 A6: đọc danh sách công ty LÚC CHẠY (trình thiết lập đổi data/companies.json không cần khởi động lại).
 export const ADS_WEBHOOK_HINT = "Top 5 buổi sáng đang KHÔNG gửi vì thiếu biến TEAMS_WEBHOOK_ADS (webhook kênh Teams của team Ads). Việc vẫn hiện ở trang Việc hôm nay."
-const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 300)
+// Persist only normalized failure codes; provider errors can contain account/config data.
 
 export async function buildInbox(now = new Date()): Promise<InboxSnapshot> {
   const r = lastDays(30, now)
   const items: InboxItem[] = [], errors: InboxSnapshot["errors"] = []
   const run = async (company: Company | "ALL", source: InboxSource, f: () => Promise<InboxItem[]>) => {
-    try { items.push(...(await f())) } catch (e) { errors.push({ company, source, error: errMsg(e) }) }
+    try { items.push(...(await f())) } catch { errors.push({ company, source, error: "source_error" }) }
   }
   const COMPANIES: Company[] = companyIds()
   for (const co of COMPANIES) {
@@ -51,6 +53,7 @@ export async function buildInbox(now = new Date()): Promise<InboxSnapshot> {
   await run("ALL", "case", async () => fromBoard(caseBoard(COMPANIES, now.getTime())))
   await run("ALL", "search", async () => { const { allSplits } = await import("@/lib/search/split"); return fromSplits(allSplits(), now) })
   await run("ALL", "nba", async () => fromNba(queryFor(COMPANIES)))
+  items.push(...fromGoogleHealth(COMPANIES, snapshotAllConnectors().google_ads, now.getTime()), ...fromSourceErrors(COMPANIES, errors))
   // Cùng khoá (vd việc quá hạn vừa từ Sức khoẻ vừa từ bảng phiên) → giữ bản đầu.
   const seen = new Set<string>()
   const uniq = rankItems(items).filter((i) => (seen.has(i.key) ? false : (seen.add(i.key), true)))
@@ -77,7 +80,7 @@ export async function sendInboxDigest(now = new Date()): Promise<{ sent: boolean
   // Lần dựng 07:45 hỏng / chưa chạy → dựng lại, KHÔNG gửi danh sách của hôm trước như của hôm nay.
   const last = readSnapshot()
   const snap = last && now.getTime() - Date.parse(last.builtAt) < 6 * 3_600_000 ? last : await buildInbox(now)
-  const open = viewItems(snap.items, readStates(), now.getTime()).filter(isOpen)
+  const open = viewItems(snap.items, readStates(), now.getTime()).filter(v => isOpen(v) && !v.evidence)
   const top = pickDigest(open)
   const card = composeDigest(snap, top, open.length, vnDate(now).slice(5).split("-").reverse().join("/"))
   const res = await sendTeamsAlert({ ...card, level: top.some((t) => t.kind === 1) ? "warning" : "good", webhookUrl: process.env.TEAMS_WEBHOOK_ADS ?? "", setupHint: ADS_WEBHOOK_HINT })

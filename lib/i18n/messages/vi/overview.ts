@@ -1,5 +1,23 @@
 // Khu "overview" (song ngữ GĐ2) — bản gốc tiếng Việt. Khoá dạng "overview.tên". Giữ NGUYÊN câu tiếng Việt đang hiển thị.
 export const overview = {
+  // P3 read-only source-quality wording — proposed, pending BA review.
+  "overview.inboxQuality.label": "Chất lượng nguồn dữ liệu",
+  "overview.inboxQuality.title": "Kiểm tra nguồn trước khi đánh giá hiệu quả",
+  "overview.inboxQuality.auth_error": "Kết nối Google chưa xác thực được. Chưa đủ bằng chứng để đánh giá dữ liệu quảng cáo.",
+  "overview.inboxQuality.service_error": "Lần kiểm tra Google gặp lỗi dịch vụ. Không coi nguồn thiếu là số 0.",
+  "overview.inboxQuality.missing": "Cấu hình kết nối Google còn thiếu. Chưa xác minh nguồn dữ liệu.",
+  "overview.inboxQuality.stale": "Bằng chứng kiểm tra Google đã cũ. Cần kiểm tra lại trước khi dùng.",
+  "overview.inboxQuality.never_checked": "Chưa có lần kiểm tra Google được ghi nhận.",
+  "overview.inboxQuality.recheck": "Bằng chứng Google chưa xác minh được với cấu hình hiện tại. Cần kiểm tra lại.",
+  "overview.inboxQuality.source_error": "Nguồn Inbox chưa đọc được. Không có kết luận về hiệu quả từ nguồn này.",
+  "overview.inboxQuality.nextConnection": "Bước tiếp: mở Sức khoẻ kết nối, xem trạng thái và yêu cầu người có quyền kiểm tra kết nối (chỉ đọc).",
+  "overview.inboxQuality.nextSource": "Bước tiếp: mở báo cáo nguồn để kiểm tra khả năng đọc và phạm vi dữ liệu (chỉ đọc).",
+  "overview.inboxQuality.open": "Mở chẩn đoán",
+  "overview.inboxQuality.checkedAt": "Nguồn được kiểm tra lúc",
+  "overview.inboxQuality.unknownTime": "Chưa biết thời điểm kiểm tra nguồn",
+  "overview.inboxQuality.global": "Nguồn: kiểm tra kết nối Google dùng chung; không xác minh quyền đọc từng tài khoản/công ty.",
+  "overview.inboxQuality.company": "Nguồn: lần đọc báo cáo Inbox trong phạm vi công ty.",
+
   // Evidence explanations — wording proposal pending BA review.
   "overview.evidence.campaign_attributed_revenue": "Chưa có doanh thu đơn hàng được đối chiếu riêng cho campaign này. Số chuyển đổi nền tảng tự báo không thay thế doanh thu Odoo.",
   "overview.evidence.approved_break_even_roas": "Chưa có ngưỡng ROAS hòa vốn được xác nhận. KPI doanh thu cấp công ty không phải ROAS hòa vốn campaign.",

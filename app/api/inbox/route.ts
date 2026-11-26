@@ -7,6 +7,10 @@ import { canAccessCompany, hasPermission } from "@/lib/permissions"
 import { readSnapshot, readStates, setItemStatus, validateStatusInput, viewItems } from "@/lib/inbox/store"
 import { isTeamsAlertConfigured } from "@/lib/teams-alert"
 import { getT } from "@/lib/i18n/server"
+import { companyIds } from "@/lib/companies"
+import { snapshotAllConnectors } from "@/lib/connectors/engine"
+import { fromGoogleHealth, fromSourceErrors } from "@/lib/inbox/evidence"
+import { rankItems } from "@/lib/inbox/build"
 import { localizeItem } from "@/lib/inbox/localize"
 
 export const dynamic = "force-dynamic"
@@ -16,13 +20,25 @@ export async function GET() {
   if (!u.ok) return u.response
   try {
     const t = await getT()
+    const companies = companyIds().filter(co => canAccessCompany(u.value, co))
+    if (!companies.length) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
     const snap = readSnapshot()
-    if (!snap) return NextResponse.json({ success: true, builtAt: null, items: [], errors: [], digest: null, adsChannel: !!(process.env.TEAMS_WEBHOOK_ADS ?? "").trim(), canEdit: hasPermission(u.value.role, "can_edit") })
-    const ok = (co: string) => co === "ALL" || canAccessCompany(u.value, co as string)
+    const now = Date.now()
+    // Scope is authorized before any health/source read. Re-evaluate current
+    // binding server-side; never replay a persisted healthy claim.
+    const connectionItems = fromGoogleHealth(companies, snapshotAllConnectors().google_ads, now)
+    if (!snap) return NextResponse.json({ success: true, builtAt: null, items: viewItems(connectionItems, readStates(), now, t).map(v => localizeItem(v, t)), errors: [], digest: null, adsChannel: !!(process.env.TEAMS_WEBHOOK_ADS ?? "").trim(), canEdit: hasPermission(u.value.role, "can_edit") })
+    const ok = (co: string) => companies.includes(co)
+    const scopedErrors = snap.errors.filter(e => e.company === "ALL" || ok(e.company))
+    const items = rankItems([
+      ...snap.items.filter(i => ok(i.company) && !i.evidence),
+      ...connectionItems, ...fromSourceErrors(companies, scopedErrors),
+    ])
     return NextResponse.json({
       success: true, builtAt: snap.builtAt,
-      items: viewItems(snap.items.filter((i) => ok(i.company)), readStates(), Date.now(), t).map((v) => localizeItem(v, t)),
-      errors: snap.errors.filter((e) => ok(e.company)), digest: snap.digest ?? null,
+      items: viewItems(items, readStates(), now, t).map((v) => localizeItem(v, t)),
+      errors: scopedErrors.flatMap(e => (e.company === "ALL" ? companies : [e.company]).map(company => ({ company, source: e.source, error: t("overview.inboxQuality.source_error") }))),
+      digest: snap.digest ? { sentAt: snap.digest.sentAt, sent: snap.digest.sent, notConfigured: snap.digest.notConfigured, keys: snap.digest.keys.filter(key => items.some(i => i.key === key)) } : null,
       adsChannel: !!(process.env.TEAMS_WEBHOOK_ADS ?? "").trim(), opsChannel: isTeamsAlertConfigured(),
       canEdit: hasPermission(u.value.role, "can_edit"),
     })

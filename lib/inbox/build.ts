@@ -37,6 +37,7 @@ export interface InboxItem {
   moneyLabel: string | null
   href: string
   hrefLabel: string
+  evidence?: import("./evidence").InboxEvidence
   children?: InboxChild[]
   campaignIds: string[]
 }
@@ -220,6 +221,7 @@ export function rankItems(items: InboxItem[]): InboxItem[] {
 export function pickDigest(ranked: InboxItem[], n = 5, perSource = 2): InboxItem[] {
   const used: Partial<Record<InboxSource, number>> = {}, out: InboxItem[] = []
   for (const it of ranked) {
+    if (it.evidence?.type === "data_quality") continue // Read-only P3 slice; notification rollout deferred.
     if (out.length >= n) break
     if ((used[it.source] ?? 0) >= perSource) continue
     used[it.source] = (used[it.source] ?? 0) + 1

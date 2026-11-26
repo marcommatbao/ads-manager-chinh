@@ -23,6 +23,7 @@ import { Pill, type PillTone } from "@/components/measure/Pill";
 import { vnd } from "@/components/case/format";
 import { getJson, postJson, ApiError } from "@/components/case/api";
 import { useToast } from "@/components/Toast";
+import { SourceEvidence } from "@/components/inbox/SourceEvidence";
 import type { InboxKind, InboxSource } from "@/lib/inbox/build";
 import type { InboxStatus, InboxView } from "@/lib/inbox/store";
 import type { Company } from "@/lib/case/types";
@@ -205,7 +206,7 @@ export default function ViecHomNayPage() {
       {!isLoading && !error && data && (
         <>
           {/* Hộp việc CHƯA từng dựng (job 07:45 chưa chạy lần nào) */}
-          {data.builtAt === null ? (
+          {data.builtAt === null && items.length === 0 ? (
             <EmptyState
               icon={InboxIcon}
               title={t("overview.today.notBuiltTitle")}
@@ -218,7 +219,7 @@ export default function ViecHomNayPage() {
               <div className="flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700">
                 <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                 <div className="space-y-1">
-                  <div>{rich(t("overview.today.updatedAt", { time: hhmmDdMm(data.builtAt) }))}</div>
+                  <div>{data.builtAt ? rich(t("overview.today.updatedAt", { time: hhmmDdMm(data.builtAt) })) : t("overview.today.notBuiltTitle")}</div>
                   {data.digest?.sent && (
                     <div>{rich(t("overview.today.digestSent", { n: data.digest.keys.length, time: hhmm(data.digest.sentAt) }))}</div>
                   )}
@@ -392,11 +393,14 @@ function ItemCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 max-w-xl space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <Pill tone={KIND_TONE[item.kind]}>{t(KIND_LABEL[item.kind])}</Pill>
+            <Pill tone={KIND_TONE[item.kind]}>{item.evidence ? t("overview.inboxQuality.label") : t(KIND_LABEL[item.kind])}</Pill>
             <span className="text-xs text-slate-400">{item.company} · {t(SOURCE_LABEL[item.source])}</span>
           </div>
           <div className="text-sm font-semibold text-slate-800">{item.title}</div>
           <div className="text-xs text-slate-500">{item.why}</div>
+          {item.evidence && (
+            <SourceEvidence evidence={item.evidence} href={item.href} hrefLabel={item.hrefLabel} t={t} />
+          )}
           {item.resurfaced && (
             <div className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-700">
               <span aria-hidden="true">↺</span> {item.resurfaced}
@@ -438,7 +442,7 @@ function ItemCard({
         </details>
       )}
 
-      {canEdit && (
+      {canEdit && !item.evidence && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Button size="sm" render={<Link href={item.href} />}>{item.hrefLabel} →</Button>
           <Button size="sm" variant="outline" onClick={onSnooze} disabled={pending}>{t("overview.today.btnSnooze")}</Button>

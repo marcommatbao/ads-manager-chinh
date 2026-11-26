@@ -106,3 +106,20 @@ it("unbound traffic success cannot bless Google; denied and failed remain truthf
   await engine.recordLiveOutcome("telegram", { ok: true, status: "healthy" });
   expect(engine.snapshotAllConnectors().telegram.status).toBe("healthy");
 });
+it("Inbox consumes current engine authority, never the disk healthy claim", async () => {
+  const { fromGoogleHealth } = await import("@/lib/inbox/evidence");
+  await engine.runLiveCheck("google_ads");
+  expect(fromGoogleHealth(["MBC"], engine.snapshotAllConnectors().google_ads)).toEqual([]);
+  vi.stubEnv("GOOGLE_ADS_REFRESH_TOKEN", "changed-fixture");
+  expect(store.getStoredHealth("google_ads")?.status).toBe("healthy");
+  const before = mocks.check.mock.calls.length;
+  const issue = fromGoogleHealth(["MBC"], engine.snapshotAllConnectors().google_ads);
+  expect(issue).toHaveLength(1);
+  expect(issue[0].evidence).toMatchObject({ reasonCode: "recheck", scope: "global_connector" });
+  expect(mocks.check).toHaveBeenCalledTimes(before);
+  const legacy = store.getStoredHealth("google_ads")!;
+  delete legacy.googleEvidenceBinding;
+  await store.saveHealthRecord(legacy);
+  expect(fromGoogleHealth(["MBC"], engine.snapshotAllConnectors().google_ads)).toHaveLength(1);
+  expect(JSON.stringify(issue)).not.toMatch(/fixture|binding|CUSTOMER|REFRESH/);
+});

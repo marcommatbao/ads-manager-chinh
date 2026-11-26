@@ -3,6 +3,24 @@ import type {
 import type { overview as vi } from "../vi/overview"
 
 export const overview: Translation<typeof vi> = {
+  // P3 wording proposal pending BA review.
+  "overview.inboxQuality.label": "Source data quality",
+  "overview.inboxQuality.title": "Check the source before assessing performance",
+  "overview.inboxQuality.auth_error": "Google authentication failed. Advertising data is unverified.",
+  "overview.inboxQuality.service_error": "The Google check encountered a service failure. Missing data is not zero.",
+  "overview.inboxQuality.missing": "Google configuration is incomplete. The source is unverified.",
+  "overview.inboxQuality.stale": "Google check evidence is stale. Recheck before using it.",
+  "overview.inboxQuality.never_checked": "No recorded Google check is available.",
+  "overview.inboxQuality.recheck": "Google evidence is unverified against current configuration. Recheck required.",
+  "overview.inboxQuality.source_error": "An Inbox source could not be read. No performance conclusion is available.",
+  "overview.inboxQuality.nextConnection": "Next: open Connection Health, review status and ask an authorized operator for a read-only connection check.",
+  "overview.inboxQuality.nextSource": "Next: open the source report to diagnose read access and data scope (read-only).",
+  "overview.inboxQuality.open": "Open diagnostics",
+  "overview.inboxQuality.checkedAt": "Source checked at",
+  "overview.inboxQuality.unknownTime": "Source check time unknown",
+  "overview.inboxQuality.global": "Source: shared Google connection check; it does not verify access to each account/company.",
+  "overview.inboxQuality.company": "Source: Inbox report read within this company scope.",
+
   // Evidence explanations — wording proposal pending BA review.
   "overview.evidence.campaign_attributed_revenue": "Campaign-level order revenue has not been reconciled. Platform conversion value is not Odoo revenue.",
   "overview.evidence.approved_break_even_roas": "No verified break-even ROAS threshold. Company revenue KPI is not campaign break-even ROAS.",
