@@ -23,6 +23,7 @@ import { Pill, type PillTone } from "@/components/measure/Pill";
 import { vnd } from "@/components/case/format";
 import { getJson, ApiError } from "@/components/case/api";
 import { useToast } from "@/components/Toast";
+import { QualityActionBrief } from "@/components/inbox/QualityActionBrief";
 import { SourceEvidence } from "@/components/inbox/SourceEvidence";
 import type { InboxKind, InboxSource } from "@/lib/inbox/build";
 import type { InboxStatus, InboxView } from "@/lib/inbox/store";
@@ -184,6 +185,7 @@ export default function ViecHomNayPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 p-6">
+      <QualityActionBrief />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900">
@@ -399,7 +401,7 @@ function ItemCard({
   const intl = useIntlLocale();
   const t = useT();
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <div id={`inbox-${item.key}`} className="rounded-xl border border-slate-200 bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 max-w-xl space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -409,7 +411,7 @@ function ItemCard({
           <div className="text-sm font-semibold text-slate-800">{item.title}</div>
           <div className="text-xs text-slate-500">{item.why}</div>
           {item.evidence && (
-            <SourceEvidence evidence={item.evidence} href={item.href} hrefLabel={item.hrefLabel} t={t} />
+            <SourceEvidence reference={item.evidenceRef} evidence={item.evidence} href={item.href} hrefLabel={item.hrefLabel} t={t} />
           )}
           {item.resurfaced && (
             <div className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-700">

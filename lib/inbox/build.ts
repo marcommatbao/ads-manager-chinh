@@ -38,6 +38,8 @@ export interface InboxItem {
   href: string
   hrefLabel: string
   evidence?: import("./evidence").InboxEvidence
+  /** Same scoped server snapshot reference as the action brief. */
+  evidenceRef?: { registryId: string; capturedAt: string }
   children?: InboxChild[]
   campaignIds: string[]
 }

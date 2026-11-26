@@ -11,6 +11,7 @@ import { companyIds } from "@/lib/companies"
 import { snapshotAllConnectors } from "@/lib/connectors/engine"
 import { fromGoogleHealth, fromSourceErrors } from "@/lib/inbox/evidence"
 import { rankItems } from "@/lib/inbox/build"
+import { qualityBriefs } from "@/lib/inbox/quality-workflow"
 import { localizeItem } from "@/lib/inbox/localize"
 
 export const dynamic = "force-dynamic"
@@ -26,8 +27,14 @@ export async function GET() {
     const now = Date.now()
     // Scope is authorized before any health/source read. Re-evaluate current
     // binding server-side; never replay a persisted healthy claim.
-    const connectionItems = fromGoogleHealth(companies, snapshotAllConnectors().google_ads, now)
-    if (!snap) return NextResponse.json({ success: true, builtAt: null, items: viewItems(connectionItems, readStates(), now, t).map(v => localizeItem(v, t)), errors: [], digest: null, adsChannel: !!(process.env.TEAMS_WEBHOOK_ADS ?? "").trim(), canEdit: hasPermission(u.value.role, "can_edit") })
+    const record = snapshotAllConnectors().google_ads
+    const connectionItems = fromGoogleHealth(companies, record, now)
+    const actionBriefs = await qualityBriefs(companies, new Date(now), { google_ads: record })
+    for (const item of connectionItems) {
+      const ref = actionBriefs.find(b => b.key === item.key)!.reference
+      item.evidenceRef = { registryId: ref.registryId, capturedAt: ref.capturedAt }
+    }
+    if (!snap) return NextResponse.json({ success: true, actionBriefs, builtAt: null, items: viewItems(connectionItems, readStates(), now, t).map(v => localizeItem(v, t)), errors: [], digest: null, adsChannel: !!(process.env.TEAMS_WEBHOOK_ADS ?? "").trim(), canEdit: hasPermission(u.value.role, "can_edit") })
     const ok = (co: string) => companies.includes(co)
     const scopedErrors = snap.errors.filter(e => e.company === "ALL" || ok(e.company))
     const items = rankItems([
@@ -35,7 +42,7 @@ export async function GET() {
       ...connectionItems, ...fromSourceErrors(companies, scopedErrors),
     ])
     return NextResponse.json({
-      success: true, builtAt: snap.builtAt,
+      success: true, actionBriefs, builtAt: snap.builtAt,
       items: viewItems(items, readStates(), now, t).map((v) => localizeItem(v, t)),
       errors: scopedErrors.flatMap(e => (e.company === "ALL" ? companies : [e.company]).map(company => ({ company, source: e.source, error: t("overview.inboxQuality.source_error") }))),
       digest: snap.digest ? { sentAt: snap.digest.sentAt, sent: snap.digest.sent, notConfigured: snap.digest.notConfigured, keys: snap.digest.keys.filter(key => items.some(i => i.key === key)) } : null,

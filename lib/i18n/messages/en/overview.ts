@@ -3,6 +3,37 @@ import type {
 import type { overview as vi } from "../vi/overview"
 
 export const overview: Translation<typeof vi> = {
+  // Action workflow wording proposal — pending BA review.
+  "overview.qualityWorkflow.title": "Action brief · Google source health",
+  "overview.qualityWorkflow.scope": "Global connector check; does not verify company, account or campaign access.",
+  "overview.qualityWorkflow.independent": "Derived from Inbox evidence, independent of the AI briefing.",
+  "overview.qualityWorkflow.empty": "No evidence in your authorized scope.",
+  "overview.qualityWorkflow.loading": "Reading evidence…",
+  "overview.qualityWorkflow.error": "Unable to read/write. Reload and check access permissions.",
+  "overview.qualityWorkflow.refresh": "Reload",
+  "overview.qualityWorkflow.record": "Record external action",
+  "overview.qualityWorkflow.recheck": "Read snapshot and observe",
+  "overview.qualityWorkflow.busy": "Working…",
+  "overview.qualityWorkflow.permission": "Editor permission is required to record and observe.",
+  "overview.qualityWorkflow.conflict": "Evidence or revision changed. Reload before retrying.",
+  "overview.qualityWorkflow.recorded": "Externally recorded, execution unverified",
+  "overview.qualityWorkflow.baseline": "Baseline evidence",
+  "overview.qualityWorkflow.read": "Source read time",
+  "overview.qualityWorkflow.unknown": "Source read time unknown",
+  "overview.qualityWorkflow.captured": "Captured at",
+  "overview.qualityWorkflow.inbox": "Open exact Inbox item",
+  "overview.qualityWorkflow.healthy": "Snapshot produces no Google health warning.",
+  "overview.qualityWorkflow.proposed": "Proposed source check",
+  "overview.qualityWorkflow.listing_observed": "Successful Google listing check observed",
+  "overview.qualityWorkflow.issue_observed": "Source issue still observed",
+  "overview.qualityWorkflow.inconclusive": "Inconclusive",
+  "overview.qualityWorkflow.no_new_read": "No new source read after action",
+  "overview.qualityWorkflow.stale_or_unavailable": "Stale, missing or invalid source",
+  "overview.qualityWorkflow.fresh_post_action": "Fresh read after recording",
+  "overview.qualityWorkflow.pending": "Day 3/7 checkpoints are unevaluated; no budget benefit conclusion.",
+  "overview.qualityWorkflow.disclaimer": "Observation does not prove execution or causal benefit. Remains under observation; never auto-resolved.",
+  "overview.qualityWorkflow.checkpoint": "Day {day} · pending assessment · due",
+
   // P3 wording proposal pending BA review.
   "overview.inboxQuality.label": "Source data quality",
   "overview.inboxQuality.title": "Check the source before assessing performance",

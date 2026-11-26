@@ -377,3 +377,105 @@ history. UI conflict handling was inspected in code; no browser interaction
 run was performed. Existing evidence rendering tests passed. No full suite,
 tsc, build, deployment, migration, real-data changes, commit or push performed.
 The existing Vitest/Vite configuration emits its CommonJS/native-loader warning.
+
+## Bounded P3/P4 Google source-health loop — 2026-11-26
+
+**Chosen path:** Google connector source-quality only. Overview and Việc hôm nay
+render `QualityActionBrief` from `actionBriefs` in authenticated GET `/api/inbox`.
+`google-source-health-v1` is a deterministic, company-scoped action digest,
+not generated AI prose. Both the brief and the existing Inbox quality evidence
+panel expose the **same registry ID, stable Inbox key, source ref, source read
+time and capture time**. The global morning briefing/history are unchanged;
+this does not claim that the generated AI briefing is now Inbox-integrated.
+Missing source time stays null. A healthy connector may remove the current
+warning, but the action/timeline remains visible for its retention period.
+
+**Workflow:** editor records an external source-remediation action, with an
+immutable server reference/baseline, session actor and server action time.
+Execution remains `externally_recorded_unverified`. One action per company/key
+is retained for 90 days; repeat recording of that baseline is idempotent,
+not another external action. The manual recheck button first GETs
+`/api/inbox/quality?company=MBC`, then POSTs the returned registry ID and the
+viewed workflow revision. The engine snapshot reader is reused; **this does
+not run a live connector check**. Another existing authorized source check
+must have produced newer evidence for a conclusive health observation.
+Timeline includes actor/time, baseline and observation refs/read times,
+`listing_observed`, `issue_observed` or `inconclusive`. No new/post-action read,
+stale/missing/future/invalid source time stays inconclusive. A source read no
+newer than the previous observation also stays inconclusive. Repeated refs are
+idempotent; a different observation within 30 seconds returns 429.
+
+**Authority and boundaries:** authentication/company checks precede source or
+store access; POST requires `can_edit`, checks current evidence when recording,
+and rejects client metrics/extra fields. Workflow CAS uses server UUID revisions
+and returns 409 for stale versions; record/observation retries return the prior
+write for the same reference. Registry references are allowlisted projections
+from the current connector engine, content-addressed, immutable and valid for
+15 minutes. Exact company/provider/Inbox key/source/global-connector scope is
+validated. This is **global Google listing health**, not proof of company,
+account or campaign access. There is no invented campaign/account mapping,
+currency or budgetKind. Existing campaign snapshot registry/consumer and budget
+reconciliation are untouched and remain available for a later campaign-bound
+slice with exact account/campaign/currency/budgetKind verification.
+
+No provider writes, approvals, consumed-approval fixtures, claims, quota,
+execution outcomes, legacy Inbox status guards, auto-resolution, provider calls,
+notifications or causal benefit claims are added. Day 3/7 due dates are visible
+as pending assessment, never a fabricated outcome. Campaign budget comparison,
+real checkpoint samples/outcome scheduling, confounder collection, broader
+ownership/resolution lifecycle and deployed/hydrated browser acceptance remain
+open; this does not close all P3/P4 gates.
+
+**Storage/privacy:** reuses `withFileLock` and `writeFileAtomicSync`; normalized
+health references/actions live in `data/inbox-quality-workflow.json`. GET may
+register a new server evidence reference, but identical evidence within TTL
+reuses its ID without rewriting. No provider payload, masked config, secret,
+provider error text, free-form notes or LLM output is stored. Actor identity and
+normalized evidence are returned only within authorized company scope; do not
+publish this internal file. Registry/actions cap at 2,000 each, observations at
+30 per action; full capacity refuses rather than evicting valid references.
+Expired refs and actions older than 90 days are pruned on successful activity;
+retention cleanup is lazy, not a timed erasure guarantee. Baselines and past
+observation refs remain embedded in retained actions after registry expiry.
+Malformed storage fails closed. Atomic rename protects file replacement;
+the mutex/CAS is **process-local only**, with no multi-process/distributed
+write guarantee. Existing shared atomic helper can leave a temporary file if
+rename fails; a failed write does not replace the prior authoritative file.
+
+**Browser fixture shapes (synthetic only):** GET `/api/inbox` retains existing
+`items/errors/builtAt/canEdit` fields, adding `actionBriefs: [{version, company,
+key, reference, action}]`; Google quality items also carry
+`evidenceRef: {registryId, capturedAt}` matching the brief. `reference` contains
+`registryId/company/key/provider:"google"/scope:"global_connector"/sourceRef:
+"connector:google_ads"/capturedAt/expiresAt/readAt/health/evidence`.
+`action` is null initially, then `{id,company,key,revision,baseline,actor,
+actionAt,execution:"externally_recorded_unverified",observations:[]}`.
+Observations append `{ref,at,actor,result,reason}`. Fixtures should preserve
+baseline/ref identities across reload, mock a later engine read for a positive
+listing observation, and keep unchanged source time for inconclusive. Scoped
+GET `/api/inbox/quality` returns `{success:true,brief,canEdit}`. POST body is
+exactly `{company,operation:"record"|"observe",registryId,expectedRevision}`;
+responses are `{success:true,action}` or `{success:false,code}` (409 conflict,
+429 throttle, 503 unavailable). UI supports vi/en, pending, error, viewer,
+disabled/loading and conflict/reload states with semantic tokens. Actual static
+component renders are tested; no hydrated browser workflow was run here.
+
+**Focused verification:** temporary-file route/store integration, pure evidence
+matching and actual React render tests in `tests/inbox-quality-workflow.test.tsx`
+cover shared Inbox/brief identity, scope/auth/role denial, immutable baseline,
+actor, stale/future/missing/pre-action evidence, replay, CAS conflict, concurrent
+idempotency, atomic failure/reload, malformed storage, eligible/healthy/failure
+states, throttle, observation cap/retention and vi/en timeline controls.
+Final focused results are recorded below. All new action records were synthetic
+and written only under OS temporary directories. No live provider/network,
+secret inspection, migration/service/deploy, full tsc/build, dependency change,
+git stage/commit/push, or NEXT/plan edits were performed.
+
+Final local result: **9 files / 101 tests passed** with
+`npx vitest run tests/inbox-quality-workflow.test.tsx tests/inbox-quality-boundary.test.ts tests/inbox-status-revision.test.ts tests/inbox-quality-ui.test.tsx tests/inbox-quality.test.ts tests/morning-briefing-route.test.ts tests/morning-briefing-history-route.test.ts tests/snapshot-consumer.test.ts tests/connector-evidence.test.tsx`.
+Focused ESLint passed without warnings on the nine changed/new TS/TSX files
+other than the overview page. Overview ESLint reports four pre-existing errors
+(`set-state-in-effect` twice, `purity`, `immutability`) and existing warnings;
+running the same lint against `git show HEAD:app/(dashboard)/page.tsx` confirmed
+the identical four errors before this patch. No lint guards were removed.
+`git diff --check` passed. The existing Vite config-loader notice remains.

@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { QualityActionBrief } from "@/components/inbox/QualityActionBrief";
 import { BriefingEvidencePanel } from "@/components/briefing/BriefingEvidencePanel";
 import type { Campaign, ReportData, DashboardSummary } from "@/types/ads.types";
 import { DateRangePicker } from "@/components/DateRangePicker";
@@ -1693,7 +1694,7 @@ export default function DashboardPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // ── Render: not configured ──
-  if (notConfigured) return <SetupBanner />;
+  if (notConfigured) return <><QualityActionBrief /><SetupBanner /></>;
 
   return (
     <>
@@ -1701,6 +1702,7 @@ export default function DashboardPage() {
       {/* ── System banners ── */}
       {/* Báo cáo buổi sáng: hiển thị quality state và evidence của Giai đoạn 3. */}
       <MorningBriefingCard />
+      <QualityActionBrief />
       {hasModule("matbao") && <RevenueReminderBanner />}
       {tokenExpired && (
         <div className="rounded-xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 px-5 py-3 flex items-center justify-between mb-2">
