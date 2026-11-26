@@ -2,7 +2,7 @@
 export const meta = {
   // BA proposed: P2 evidence wording; pending business wording review.
   "meta.evidence.title": "Bằng chứng đo lường",
-  "meta.evidence.boundary": "Chỉ đọc. Có cấu hình không chứng minh thẻ đã chạy, yêu cầu đã gửi hay nền tảng đã nhận. Chưa xác minh độ mới của từng nguồn.",
+  "meta.evidence.boundary": "Chỉ đọc. Cấu hình không chứng minh thẻ đã bắn, gửi hoặc được nhận.",
   "meta.evidence.empty": "Chưa có bằng chứng từ nguồn đọc hiện tại.",
   "meta.evidence.status.observed": "Đã thấy cấu hình · chưa xác minh vận hành",
   "meta.evidence.status.unverified": "Chưa xác minh",
@@ -15,8 +15,8 @@ export const meta = {
   "meta.evidence.reason.missing": "Chưa có cấu hình thẻ được nguồn đọc xác nhận; không kết luận thẻ không tồn tại.",
   "meta.evidence.reason.partial": "Nguồn GTM lỗi hoặc chỉ đọc được một phần; không đủ để kết luận.",
   "meta.evidence.reason.scope": "Nguồn không khớp công ty đang xem.",
-  "meta.evidence.reason.stale": "Báo cáo đã quá 30 phút; không dùng để xác nhận cấu hình hiện tại.",
-  "meta.evidence.reason.ambiguous_time": "Thời gian báo cáo thiếu, không hợp lệ hoặc ở tương lai.",
+  "meta.evidence.reason.stale": "Lần đọc nguồn GTM đã quá 30 phút; chưa xác minh cấu hình hiện tại.",
+  "meta.evidence.reason.ambiguous_time": "Thiếu thời điểm đọc nguồn GTM hợp lệ hoặc thời điểm nằm trong tương lai.",
   "meta.evidence.reason.runtime": "Nguồn hiện tại không có bằng chứng chạy thẻ và giá trị biến đã phân giải. Ảnh chụp hoặc Variables Names chưa đủ.",
   "meta.evidence.reason.network": "Chưa có bằng chứng mạng gắn với sự kiện cụ thể.",
   "meta.evidence.reason.receipt": "Số liệu tổng hợp không xác nhận nền tảng nhận đúng sự kiện đang kiểm tra.",
@@ -27,7 +27,10 @@ export const meta = {
   "meta.evidence.next.request_sent": "Thu metadata mạng đã che nhạy cảm: sự kiện, đích gửi và thời gian; không lưu payload, cookie hay thông tin khách hàng.",
   "meta.evidence.next.platform_received": "Kiểm tra chẩn đoán/test receipt có thẩm quyền của nền tảng, độ trễ, tiền tệ và dedup browser/server. TikTok chỉ có checklist đọc, chưa xác minh quyền/API scope/đích test.",
   "meta.evidence.next.business_reconciled": "Đối soát sự kiện với đơn đã thanh toán đúng công ty và khoảng thời gian, tiền tệ, hoàn tiền và quy tắc attribution.",
-  "meta.evidence.source": "Tham chiếu: Tag Doctor / nguồn GTM. Không có thời điểm đọc GTM riêng; thời gian gom báo cáo không thay thế thời điểm đọc nguồn.",
+  "meta.evidence.source": "Nguồn: Tag Doctor / GTM. Thời gian gom báo cáo không thay thế thời điểm đọc nguồn.",
+  "meta.evidence.readAt": "Đọc nguồn (sớm nhất)",
+  "meta.evidence.unknownTime": "Chưa biết thời điểm đọc nguồn",
+  "meta.evidence.version": "Phiên bản cấu hình",
 
   "meta.policy.sev.high": "Cao",
   "meta.policy.sev.medium": "Trung bình",

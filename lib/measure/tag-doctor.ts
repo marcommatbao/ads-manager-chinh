@@ -286,6 +286,7 @@ export async function tagDoctor(company: Company, opts: { force?: boolean; range
   // Đệm theo công ty + KHOẢNG — trước 28/09 chỉ theo công ty (khoảng luôn cố định). Văn bản sinh theo ngôn ngữ → khoá có ngôn ngữ.
   const memoKey = `${t("libmeta.localeTag")}|${company}|${opts.range?.from ?? ""}|${opts.range?.to ?? ""}`
   const hit = memo.get(memoKey)
+  // Preserve per-container readAt from the completed source read; cache/assembly never renews it.
   if (!opts.force && hit && Date.now() - hit.at < 30 * 60_000) return hit.value
   const sources: EvidenceSource[] = []
 

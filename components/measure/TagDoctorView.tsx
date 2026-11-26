@@ -46,7 +46,7 @@ import type { GtmContainer, GtmPixelTag } from "@/lib/measure/gtm";
  *  object literal phía route ghi đè mất mảng đó (đã sửa ở route.ts, xem chú thích tại đó). */
 export interface TagDoctorApiResponse extends TagDoctorReport {
   success: true;
-  trackingEvidence: TrackingEvidence;
+  trackingEvidence?: TrackingEvidence;
   ackIfAlone: Record<string, boolean>;
   confirmText: string;
   history: GoalFixExecution[];

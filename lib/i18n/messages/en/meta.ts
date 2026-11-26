@@ -4,7 +4,7 @@ import type { meta as vi } from "../vi/meta"
 export const meta: Translation<typeof vi> = {
   // BA proposed: P2 evidence wording; pending business wording review.
   "meta.evidence.title": "Tracking evidence",
-  "meta.evidence.boundary": "Read only. Configuration does not prove firing, sending or receipt. Per-source freshness is unverified.",
+  "meta.evidence.boundary": "Read only. Configuration does not prove firing, sending or receipt.",
   "meta.evidence.empty": "No evidence from the current reader.",
   "meta.evidence.status.observed": "Configuration observed · runtime unverified",
   "meta.evidence.status.unverified": "Unverified",
@@ -17,8 +17,8 @@ export const meta: Translation<typeof vi> = {
   "meta.evidence.reason.missing": "No tag configuration confirmed by this reader; absence is not established.",
   "meta.evidence.reason.partial": "The GTM source failed or is partial; no conclusion is supported.",
   "meta.evidence.reason.scope": "The source does not match the selected company.",
-  "meta.evidence.reason.stale": "The report is over 30 minutes old; current configuration is unverified.",
-  "meta.evidence.reason.ambiguous_time": "Report time is missing, invalid or in the future.",
+  "meta.evidence.reason.stale": "The GTM source read is over 30 minutes old; current configuration is unverified.",
+  "meta.evidence.reason.ambiguous_time": "GTM source read time is missing, invalid or in the future.",
   "meta.evidence.reason.runtime": "This reader has no firing evidence or resolved variable values. A screenshot or Variables Names is insufficient.",
   "meta.evidence.reason.network": "No network evidence linked to a specific event is available.",
   "meta.evidence.reason.receipt": "Aggregate metrics do not confirm receipt of the event being checked.",
@@ -29,7 +29,10 @@ export const meta: Translation<typeof vi> = {
   "meta.evidence.next.request_sent": "Collect redacted network metadata: event, destination and time; retain no payloads, cookies or customer information.",
   "meta.evidence.next.platform_received": "Check authoritative platform diagnostics/test receipt, delay, currency and browser/server deduplication. TikTok remains a read-only checklist; authorization, API scopes and test target are unverified.",
   "meta.evidence.next.business_reconciled": "Reconcile events with paid orders for the same company and period, currency, refunds and attribution rules.",
-  "meta.evidence.source": "Reference: Tag Doctor / GTM source. No separate GTM read time is available; report assembly time is not a source read time.",
+  "meta.evidence.source": "Source: Tag Doctor / GTM. Report assembly time is not source read time.",
+  "meta.evidence.readAt": "Source read (earliest)",
+  "meta.evidence.unknownTime": "Source read time unknown",
+  "meta.evidence.version": "Configuration version",
 
   "meta.policy.sev.high": "High",
   "meta.policy.sev.medium": "Medium",

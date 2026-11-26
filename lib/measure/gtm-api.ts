@@ -103,6 +103,7 @@ export interface GtmTag {
   firingTriggerIds: string[]
 }
 export interface GtmLive {
+  readAt?: string
   publicId: string
   path: string // accounts/<a>/containers/<c>
   versionId: string
@@ -147,6 +148,7 @@ export async function readLive(publicId: string): Promise<GtmLive> {
   if (!p) throw new GtmApiError(`Tài khoản dịch vụ ${gtmServiceEmail() ?? ""} không thấy ${publicId} — thêm email này vào container trong GTM`, 403)
   const v = await gtmCall("GET", `${p}/versions:live`)
   return {
+    readAt: new Date().toISOString(),
     publicId, path: p, versionId: String(v.containerVersionId), versionName: String(v.name ?? ""),
     tags: ((v.tag ?? []) as Json[]).map(tagOf), triggers: ((v.trigger ?? []) as Json[]).map(triggerOf),
   }
@@ -184,6 +186,7 @@ export function liveToContainer(live: GtmLive): GtmContainer {
     }
   }
   return {
+    readAt: live.readAt,
     id: live.publicId, version: live.versionId, pixelTags, googleAdsLabels,
     source: "api", versionName: live.versionName, tagsDetail,
     triggers: live.triggers.map((x) => ({ id: x.id, name: x.name, condition: x.condition, customEvent: x.customEvent })),

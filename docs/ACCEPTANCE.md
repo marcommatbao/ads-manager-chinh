@@ -201,7 +201,7 @@ Source audit / mini-spec:
   source-level status. It has no per-source read timestamp. `collectedAt` is
   report assembly time and is used only to reject old/future/invalid reports;
   it is never presented as GTM read time. No layer claims fresh or healthy.
-- `trackingEvidence` v1 contains company and five ordered layers, each with
+- Original slice (superseded for freshness by the source-read provenance update below): `trackingEvidence` v1 contains company and five ordered layers, each with
   `status`, reason code and optional fixed source reference `tag-doctor:gtm`.
   Configured is `observed` only for same-company, at-most-30-minute report with
   successful GTM source and parsed Meta/Google tag presence. Partial/error/empty
@@ -251,3 +251,66 @@ loading/error/permission feedback and no extra request. Do not click existing
 fix/publish buttons. Browser viewport/keyboard verification remains pending main;
 static render tests do not establish visual acceptance. Main subsequently ran an isolated real-component + built-CSS Chromium fixture: 24/24 vi/en × configured/partial/stale/empty × 375/768/1280 passed, no horizontal overflow/page errors, Tab/Enter/Space verified and mobile screenshot reviewed. No server/provider calls; full parent routing/auth, screen reader and live receipt verification remain pending. No new fixture route is
 shipped. Full P2 runtime/receipt/reconciliation remains outside this first slice.
+
+
+### ACU-T03 / P2 — GTM source-read provenance follow-up (2026-11-26)
+
+This update supersedes the earlier assembly-time freshness rule above. Public
+`fetchGtm` records optional `GtmContainer.readAt` only after the successful body
+read and parse. API `readLive` records optional `GtmLive.readAt` after the successful
+live response read; `liveToContainer` preserves it, including undefined for legacy
+objects. The existing Tag Doctor report cache retains these values unchanged.
+`collectedAt` remains assembly time and is never used as source freshness.
+No migration, additional request, provider connection, flag or dependency is added.
+
+Configuration is observed only for matching company, successful GTM source,
+recognized tag configuration, and **every** returned container having a canonical,
+finite, nonfuture source timestamp at most 30 minutes old. The oldest read controls
+freshness. Missing/invalid/future times, partial/error reads, and legacy unknown
+cache entries remain unverified; existing next-check guidance remains available.
+A failed container in the existing multi-read collection conservatively prevents
+configuration observation. All deeper layers remain unverified.
+
+The additive v1 configured layer carries a fixed `sourceRef: "tag-doctor:gtm"`,
+optional aggregate `readAt` (oldest, only when all timestamps are valid), and up to
+20 `sources`: `{ sourceRef: "gtm:api" | "gtm:public" | "tag-doctor:gtm",
+readAt: string | null, configVersion?: string }`. Versions accept only 1–20 digits;
+references are fixed enums. No IDs, URLs, account paths, tokens, raw payloads or
+version names enter this projection. Cross-company projection carries no source
+metadata; the existing route rejects mismatched reader company before serialization.
+
+Panel vi/en displays earliest read and individual source reads/available versions
+inside the existing native disclosure. Dates use locale formatting and explicit
+UTC+07:00. Unknown time has explicit wording and no `<time>` element. Existing
+Card/tokens, wrapping and keyboard disclosure are retained. Wording is BA proposed.
+`TagDoctorApiResponse.trackingEvidence` is optional for legacy responses.
+
+Focused validation: **39 tests passed across 5 files**, plus scoped ESLint passed:
+`tests/tracking-evidence.test.tsx`, `tests/tracking-evidence-route.test.ts`,
+`tests/gtm-read-provenance.test.ts`, `tests/tag-doctor-cache-provenance.test.ts`,
+`tests/tag-doctor-parent.test.tsx`. Coverage includes public/API completion timing,
+pure-parser/legacy unknown, API conversion, actual report assembly/cache retention,
+old source + new assembly staying stale, absent/malformed/future/mixed container
+times, partial multi-read failure, true fresh configuration, authorization and
+cross-company route rejection, bounded secret-free projection, vi/en disclosures,
+and actual parent loading/error/403/empty legacy rendering. Provider, SWR and
+mutation-panel boundaries are mocked; these are static rendering/unit/route tests,
+not full browser routing, live authorization, interaction or screen-reader proof.
+No full tsc/build, network/provider/env-secret access, server start, deploy, GTM
+publish, event send, commit or push was performed for this update.
+
+Main browser fixture adjustment: add `gtm[].readAt` in canonical ISO form, e.g.
+`"2026-11-26T01:00:00.000Z"`, before calling `projectTrackingEvidence` with an
+appropriate synthetic `now`. Keep `source: "api" | "public"` and numeric-string
+`version` if testing metadata. For stale use a source time older than 30 minutes
+while keeping `collectedAt` new; for unknown omit `gtm[].readAt`. Direct panel
+fixtures may add the configured-layer `sources` array and aggregate `readAt`
+shape above. Previous browser acceptance predates this timestamp UI addition;
+responsive/keyboard browser recheck remains with main. User will redeploy manually.
+
+Main resumed verification: actual panel + built CSS browser fixtures passed 24/24
+across vi/en, configured/partial/stale/empty and 375/768/1280px. Expanded source
+read time/version disclosure and UTC+07:00 were asserted; keyboard Tab/Enter/Space,
+no horizontal overflow and no page errors verified. Expanded mobile screenshot
+visually reviewed. This is isolated static component evidence, not full Next
+routing/auth/provider or screen-reader acceptance. No server/provider calls.

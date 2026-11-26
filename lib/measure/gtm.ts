@@ -25,6 +25,8 @@ export interface GtmPixelTag {
 
 export interface GtmContainer {
   id: string
+  /** Completed source read time; absent for legacy/parsed-only data. Never assembly time. */
+  readAt?: string
   version: string | null
   pixelTags: GtmPixelTag[]
   /** Nhãn chuyển đổi Google Ads có thẻ trong container: "AW-<id>/<label>". */
@@ -111,5 +113,6 @@ export async function fetchGtm(id: string): Promise<GtmContainer> {
   if (!/^GTM-[A-Z0-9]{4,10}$/.test(id)) throw new Error("Mã GTM không hợp lệ")
   const res = await fetchRetry(`https://www.googletagmanager.com/gtm.js?id=${id}`, { signal: AbortSignal.timeout(30_000), cache: "no-store" })
   if (!res.ok) throw new Error(`Không tải được gtm.js của ${id} (${res.status})`)
-  return parseGtm(id, await res.text())
+  const parsed = parseGtm(id, await res.text())
+  return { ...parsed, source: "public", readAt: new Date().toISOString() }
 }

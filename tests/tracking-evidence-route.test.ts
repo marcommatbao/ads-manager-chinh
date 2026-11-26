@@ -35,6 +35,20 @@ describe("actual tags route evidence isolation (TEST ONLY boundaries)", () => {
     expect(json.trackingEvidence.layers).toHaveLength(5);
     expect(json.trackingEvidence.layers.every((x: { status: string }) => x.status === "unverified")).toBe(true);
   });
+  it.each([false, true])("carries source provenance through the actual route (stale=%s)", async stale => {
+    const readAt = new Date(Date.now() - (stale ? 31 * 60_000 : 0)).toISOString();
+    mocks.reader.mockResolvedValue({ company: "MBC", fixes: [], collectedAt: new Date().toISOString(),
+      sources: [{ id: "gtm", status: "ok" }],
+      gtm: [{ id: "GTM-TEST123", source: "api", readAt, version: "123", pixelTags: [], googleAdsLabels: [{ tagId: "1", sendTo: "PRIVATE" }], raw: "PRIVATE" }],
+    });
+    const response = await GET(request());
+    expect(response.status).toBe(200);
+    const { trackingEvidence } = await response.json();
+    expect(trackingEvidence.layers[0]).toMatchObject({ readAt, status: stale ? "unverified" : "observed", sources: [{ sourceRef: "gtm:api", readAt, configVersion: "123" }] });
+    expect(trackingEvidence.layers.slice(1).every((x: { status: string }) => x.status === "unverified")).toBe(true);
+    expect(JSON.stringify(trackingEvidence)).not.toMatch(/PRIVATE|raw|sendTo|GTM-TEST/);
+    expect(mocks.reader).toHaveBeenCalledTimes(1);
+  });
   it("does not promote a mismatched reader result", async () => {
     mocks.reader.mockResolvedValue({ company: "MBI", fixes: [], sources: [], gtm: [], collectedAt: new Date().toISOString() });
     const response = await GET(request());
