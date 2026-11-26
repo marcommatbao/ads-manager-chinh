@@ -8,6 +8,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, RefreshCw, CheckCircle2, AlertCircle, XCircle, AlertTriangle, Ban } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { projectConnectorEvidence } from "@/lib/connectors/evidence";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ConnectorHealthRecord, ConnectorStatus } from "@/lib/connectors/types";
@@ -74,42 +77,62 @@ function relTime(iso: string | null, t: TFunction): string {
   return t("settings.health.ago.d", { n: Math.floor(hrs / 24) });
 }
 
+// Always visible: configuration presence is independent of live evidence.
+export function ConnectorEvidence({ record, now }: { record?: ConnectorHealthRecord | null; now?: number }) {
+  const t = useT();
+  const evidence = projectConnectorEvidence(record, now);
+  return (
+    <div className="border-t border-border px-4 py-3 text-xs text-foreground space-y-2" aria-label={t("settings.health.evidence.title")}>
+      <dl className="grid gap-2 sm:grid-cols-2">
+        <div><dt className="text-muted-foreground">{t("settings.health.evidence.configuration")}</dt><dd className="mt-1">{t(`settings.health.evidence.config.${evidence.configuration}`)}</dd></div>
+        <div><dt className="text-muted-foreground">{t("settings.health.evidence.check")}</dt><dd className="mt-1 flex flex-wrap gap-2"><Badge variant="outline">{t(`settings.health.evidence.outcome.${evidence.outcome}`)}</Badge><span>{t(`settings.health.evidence.freshness.${evidence.freshness}`)}</span></dd></div>
+      </dl>
+      {evidence.checkedAt && <p className="text-muted-foreground">{t("settings.health.evidence.attempt")} <time dateTime={evidence.checkedAt}>{evidence.checkedAt}</time></p>}
+      <p className="leading-relaxed">{t(`settings.health.evidence.scope.${evidence.scope}`)}</p>
+      {evidence.outcome === "recheck" && <p className="text-muted-foreground">{t("settings.health.evidence.recheck")}</p>}
+    </div>
+  );
+}
+
 // ── Connector row ─────────────────────────────────────────
 
-function ConnectorRow({
+export function ConnectorRow({
   meta,
   record,
   canTest,
   onTest,
   testing,
+  now,
 }: {
   meta: ConnectorMeta;
   record: ConnectorHealthRecord | null;
   canTest: boolean;
   onTest: () => void;
   testing: boolean;
+  now?: number;
 }) {
   const t = useT();
-  const status = record?.status ?? "missing_config";
+  const evidence = projectConnectorEvidence(record, now);
+  const status = record?.status === "healthy" && !["listing", "recorded"].includes(evidence.outcome)
+    ? "warning" : record?.status ?? "missing_config";
   const [expanded, setExpanded] = useState(false);
   const hasDetails = record && (record.failureReason || Object.keys(record.maskedConfig).length > 0 || record.note || (record.status !== "healthy" && record.status !== "disabled"));
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <Card className="gap-0 py-0">
       <div
-        className={cn("flex items-center gap-3 px-4 py-3.5", hasDetails && "cursor-pointer hover:bg-slate-50/60")}
-        onClick={() => hasDetails && setExpanded(e => !e)}
+        className={cn("flex flex-wrap items-center gap-3 px-4 py-3.5")}
       >
         {/* Icon */}
-        <span className="text-xl leading-none">{meta.icon}</span>
+        <span className="text-muted-foreground" aria-hidden="true"><CheckCircle2 className="h-5 w-5" /></span>
 
         {/* Name + status */}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-slate-800 truncate">{meta.displayName}</p>
           <p className="text-xs text-slate-400 mt-0.5">
-            {record?.lastChecked
-              ? t("settings.health.checked", { time: relTime(record.lastChecked, t) })
-              : t("settings.health.neverChecked")}
+            {evidence.freshness === "recent"
+              ? t("settings.health.checked", { time: relTime(record!.lastChecked, t) })
+              : t(`settings.health.evidence.freshness.${evidence.freshness}`)}
             {record?.needsRefresh && (
               <span className="ml-2 text-amber-600 font-medium">· {t("settings.health.needsRefresh")}</span>
             )}
@@ -136,6 +159,8 @@ function ConnectorRow({
         )}
       </div>
 
+      <ConnectorEvidence record={record} now={now} />
+      {hasDetails && <Button variant="ghost" className="mx-4 mb-2 self-start focus-visible:ring-ring" aria-expanded={expanded} onClick={() => setExpanded(e => !e)}>{t("settings.health.evidence.details")}</Button>}
       {/* Expanded details */}
       {expanded && hasDetails && (
         <div className="border-t border-slate-100 px-4 py-3 space-y-2 bg-slate-50/30">
@@ -156,8 +181,8 @@ function ConnectorRow({
           {Object.entries(record?.maskedConfig ?? {}).length > 0 && (
             <div className="space-y-1">
               {Object.entries(record!.maskedConfig).map(([k, v]) => (
-                <div key={k} className="flex items-center gap-2 text-xs font-mono">
-                  <span className="text-slate-500 min-w-[180px]">{k}</span>
+                <div key={k} className="flex flex-wrap items-center gap-2 text-xs font-mono break-all">
+                  <span className="text-slate-500 break-all">{k}</span>
                   <span className="text-slate-700 bg-white border border-slate-200 px-2 py-0.5 rounded">{v}</span>
                 </div>
               ))}
@@ -165,7 +190,7 @@ function ConnectorRow({
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -182,15 +207,22 @@ export function ConnectorHealth({ canTest = false }: Props) {
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState<Record<string, boolean>>({});
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<"denied" | "failed" | null>(null);
 
   const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
     try {
       const res = await fetch("/api/connectors/health");
-      if (res.ok) {
-        const json = await res.json() as HealthResponse;
-        setData(json);
+      if (!res.ok) {
+        setData(null);
+        setLoadError(res.status === 401 || res.status === 403 ? "denied" : "failed");
+        return;
       }
-    } catch { /* ignore */ }
+      const json = await res.json() as HealthResponse;
+      if (!Array.isArray(json.connectors) || !json.records || typeof json.records !== "object") throw new Error("invalid_health_response");
+      setData(json);
+    } catch { setData(null); setLoadError("failed"); }
     finally { setLoading(false); }
   }, []);
 
@@ -231,12 +263,20 @@ export function ConnectorHealth({ canTest = false }: Props) {
     );
   }
 
-  if (!data) return null;
+  if (!data) return <div role="alert" className="rounded-xl border border-border p-4 text-sm space-y-3">
+    <p>{t(loadError === "denied" ? "settings.health.evidence.denied" : "settings.health.evidence.loadFailed")}</p>
+    <Button variant="outline" onClick={() => void load()}>{t("settings.health.evidence.retry")}</Button>
+  </div>;
+
+  if (data.connectors.length === 0) return <p role="status" className="text-sm text-muted-foreground">{t("settings.health.evidence.empty")}</p>;
 
   // Count by status for summary pill row
   const summary = data.connectors.reduce(
     (acc, c) => {
-      const s = data.records[c.id]?.status ?? "missing_config";
+      const record = data.records?.[c.id];
+      const evidence = projectConnectorEvidence(record);
+      const s = record?.status === "healthy" && !["listing", "recorded"].includes(evidence.outcome)
+        ? "warning" : record?.status ?? "missing_config";
       acc[s] = (acc[s] ?? 0) + 1;
       return acc;
     },
@@ -279,7 +319,7 @@ export function ConnectorHealth({ canTest = false }: Props) {
           <ConnectorRow
             key={meta.id}
             meta={meta}
-            record={data.records[meta.id] ?? null}
+            record={data.records?.[meta.id] ?? null}
             canTest={effectiveCanTest}
             onTest={() => testConnector(meta.id)}
             testing={!!testing[meta.id]}

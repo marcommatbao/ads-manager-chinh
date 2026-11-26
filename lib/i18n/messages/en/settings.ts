@@ -2,6 +2,35 @@ import type { Translation } from "../../types"
 import type { settings as vi } from "../vi/settings"
 
 export const settings: Translation<typeof vi> = {
+  // Connection evidence wording proposal — pending BA review.
+  "settings.health.evidence.denied": "Sign in with permission to view connection health.",
+  "settings.health.evidence.loadFailed": "Connection health could not be loaded. Working connections cannot be confirmed.",
+  "settings.health.evidence.retry": "Reload health",
+  "settings.health.evidence.empty": "No connections are available in your view scope.",
+  "settings.health.evidence.title": "Connection evidence",
+  "settings.health.evidence.configuration": "Configuration presence",
+  "settings.health.evidence.check": "Check evidence",
+  "settings.health.evidence.attempt": "Recorded attempt:",
+  "settings.health.evidence.details": "Connection details",
+  "settings.health.evidence.config.unknown": "Configuration information unavailable",
+  "settings.health.evidence.config.present": "Required fields present; connectivity not established",
+  "settings.health.evidence.config.partial": "Partially configured",
+  "settings.health.evidence.config.missing": "Required configuration missing",
+  "settings.health.evidence.outcome.unavailable": "No check evidence",
+  "settings.health.evidence.outcome.disabled": "Disabled",
+  "settings.health.evidence.outcome.failed": "Check failed",
+  "settings.health.evidence.outcome.recheck": "Recheck required",
+  "settings.health.evidence.outcome.listing": "Account listing verified",
+  "settings.health.evidence.outcome.recorded": "Successful result recorded",
+  "settings.health.evidence.freshness.never": "Never checked",
+  "settings.health.evidence.freshness.invalid": "Invalid timestamp",
+  "settings.health.evidence.freshness.future": "Timestamp is in the future",
+  "settings.health.evidence.freshness.stale": "Evidence is at least 1 hour old",
+  "settings.health.evidence.freshness.recent": "Attempt within the last hour",
+  "settings.health.evidence.scope.google": "The Google test only lists accessible accounts. It does not verify configured campaign data, event receipt or attribution.",
+  "settings.health.evidence.scope.other": "Scope is limited to the configured provider check, which may inspect configuration only. The record does not identify the successful operation. Campaign data, event receipt and attribution remain unverified.",
+  "settings.health.evidence.recheck": "An earlier success does not clear a warning. Use Test for new evidence; acknowledging a warning does not resolve the connection.",
+
   // Wording proposal — pending BA review.
   "settings.google.oauthSaved": "Google OAuth configuration saved. Test the connection to verify ad account read access.",
   "settings.google.sources": "Running sources: env ({env}); Settings ({settings}).",

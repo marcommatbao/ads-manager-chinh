@@ -41,7 +41,14 @@ it("requires live proof; unchanged success remains healthy and marker stays disk
   const refreshed = await refresh();
   expect(refreshed.status).toBe(200);
   expect(await refreshed.text()).not.toContain("googleEvidenceBinding");
-  expect(await (await GET()).text()).not.toContain("googleEvidenceBinding");
+  const checksBeforeGet = mocks.check.mock.calls.length;
+  const publicResponse = await (await GET()).json();
+  expect(mocks.check).toHaveBeenCalledTimes(checksBeforeGet);
+  expect(publicResponse).toMatchObject({ canTest: true, records: { google_ads: { id: "google_ads", status: "healthy", configComplete: true, partialConfig: false } } });
+  expect(publicResponse.connectors.some((c: { id: string }) => c.id === "google_ads")).toBe(true);
+  expect(JSON.stringify(publicResponse)).not.toContain("googleEvidenceBinding");
+  const { projectConnectorEvidence } = await import("@/lib/connectors/evidence");
+  expect(projectConnectorEvidence(publicResponse.records.google_ads).outcome).toBe("listing");
   const { POST } = await import("@/app/api/connectors/[id]/test/route");
   const response = await POST({} as never, { params: Promise.resolve({ id: "google_ads" }) });
   expect(response.status).toBe(200);
