@@ -188,3 +188,66 @@ Focused ESLint on changed connector modules and tests passed.
 No real provider/network, deploy, credential/data writes, dependencies or services;
 no tsc/full build. Listing success still proves accessible-account listing only,
 not configured account campaign access; runtime acceptance remains pending.
+
+### ACU-T03 / P2 — first read-only evidence slice (BA wording proposed)
+
+Surface: existing `/do-luong` → Tag Doctor tab (`TagDoctorView`), existing
+`GET /api/measure/tags`; no new endpoint, fetch, environment flag, dependency or
+write capability. Roll back by removing the panel inclusion and additive
+`trackingEvidence` field. Existing action/publish routes are unchanged.
+
+Source audit / mini-spec:
+- GTM report contains parsed/live tag configuration, version, source kind and
+  source-level status. It has no per-source read timestamp. `collectedAt` is
+  report assembly time and is used only to reject old/future/invalid reports;
+  it is never presented as GTM read time. No layer claims fresh or healthy.
+- `trackingEvidence` v1 contains company and five ordered layers, each with
+  `status`, reason code and optional fixed source reference `tag-doctor:gtm`.
+  Configured is `observed` only for same-company, at-most-30-minute report with
+  successful GTM source and parsed Meta/Google tag presence. Partial/error/empty
+  metadata stays unverified. This observes presence, not correctness or firing.
+- Fired, sent, received and business reconciliation are unverified: current
+  reader supplies no linked event-level evidence. Platform aggregate counts,
+  Odoo totals, screenshots, variable Names and configuration are insufficient.
+  No event identifiers, provider labels, payloads, URLs, credentials or customer
+  information enter the new projection. No `readAt` is invented.
+- Actual route guards user/company before the existing reader, history or GTM
+  configuration helpers. Mismatched reader company is rejected before report
+  serialization. No new provider connection/auth claim is inferred.
+
+State / test map:
+
+| Acceptance | Delivered behavior / focused proof |
+| --- | --- |
+| ACU-2a | Deeper layers stay unverified even with config/fired extra fields; unit projection test. |
+| ACU-2b | Variables Names/screenshot ignored; runtime next check asks for redacted Values; unit + localized static render. |
+| ACU-2c | Partial/error source fails closed. Consent, network, receipt delay, currency and browser/server dedup require evidence; checklist only, no automatic diagnosis. |
+| ACU-2d | Old/future/invalid/mismatched metadata fails closed; real route auth/company guards tested with boundary mocks; mismatched report returns 502. |
+| ACU-2e | TikTok read-only checklist explicitly states missing authorization/scopes/test target; no TikTok reader or writes added. |
+
+Loading/error/permission continue through existing Tag Doctor parent (no second
+request); missing additive response field has an empty fallback. Partial/stale
+responses render per-layer reasons. Panel uses existing Card, semantic tokens,
+Lucide and vi/en keys. Native details/summary is keyboard operable, focus visible,
+no chart/stat tile. Copy is proposed for BA review, not business sign-off.
+
+Validation: `npx vitest run tests/tracking-evidence.test.tsx tests/tracking-evidence-route.test.ts`
+and focused ESLint on changed TS/TSX files. Fixtures are TEST ONLY; provider,
+auth/session and persistence boundaries are mocked. No env secrets, network,
+service start, build, tsc, deploy, publish or event sending was performed.
+
+Browser fixture instructions for main (not executed by worker): on an existing
+local preview, intercept **only** GET `/api/measure/tags*` with a TEST ONLY copy
+of a normal response shape; do not point at a provider or enable mutation actions.
+Use `projectTrackingEvidence` and synthetic report from
+`tests/tracking-evidence.test.tsx` to produce the additive field. Alternatively
+mount `TrackingEvidencePanel` in an existing local component fixture inside
+`I18nProvider`; it needs only `trackingEvidence`, no session/provider. Exercise
+observed-config, missing/partial, stale, future and undefined data in both locales.
+At 375/768/1280px verify wrapping/no horizontal scroll, Tab to every summary,
+Enter/Space expansion and visible focus. For whole-screen states, intercept the
+existing GET with delayed response, 401/403/500 and empty data; confirm parent
+loading/error/permission feedback and no extra request. Do not click existing
+fix/publish buttons. Browser viewport/keyboard verification remains pending main;
+static render tests do not establish visual acceptance. Main subsequently ran an isolated real-component + built-CSS Chromium fixture: 24/24 vi/en × configured/partial/stale/empty × 375/768/1280 passed, no horizontal overflow/page errors, Tab/Enter/Space verified and mobile screenshot reviewed. No server/provider calls; full parent routing/auth, screen reader and live receipt verification remain pending. No new fixture route is
+shipped. Full P2 runtime/receipt/reconciliation remains outside this first slice.

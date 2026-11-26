@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Pill, type PillTone } from "@/components/measure/Pill";
+import { TrackingEvidencePanel } from "@/components/measure/TrackingEvidencePanel";
+import type { TrackingEvidence } from "@/lib/measure/evidence-contract";
 import { SourceTable } from "@/components/measure/SourceTable";
 import { datetimeVN, num } from "@/components/case/format";
 import { getJson, postJson, ApiError } from "@/components/case/api";
@@ -44,6 +46,7 @@ import type { GtmContainer, GtmPixelTag } from "@/lib/measure/gtm";
  *  object literal phía route ghi đè mất mảng đó (đã sửa ở route.ts, xem chú thích tại đó). */
 export interface TagDoctorApiResponse extends TagDoctorReport {
   success: true;
+  trackingEvidence: TrackingEvidence;
   ackIfAlone: Record<string, boolean>;
   confirmText: string;
   history: GoalFixExecution[];
@@ -177,6 +180,7 @@ export function TagDoctorView({ company, range }: { company: Company; range: Dat
             </section>
           )}
 
+          <TrackingEvidencePanel evidence={data.trackingEvidence} />
           <SourceTable sources={data.sources} />
 
           <section>
