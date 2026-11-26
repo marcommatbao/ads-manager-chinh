@@ -91,9 +91,15 @@ export async function checkGoogle(): Promise<CheckResult> {
     if (!res.ok) {
       return { ok: false, status: "service_error", failureCategory: "server_error", failureReason: `HTTP ${res.status}` };
     }
-    const data = await res.json() as { resourceNames?: string[] };
-    const count = data.resourceNames?.length ?? 0;
-    return { ok: true, status: "healthy", note: `${count} account(s) accessible` };
+    const data = await res.json() as { resourceNames?: unknown };
+    if (!Array.isArray(data.resourceNames) || data.resourceNames.some(name => typeof name !== "string" || !/^customers\/\d+$/.test(name))) {
+      return { ok: false, status: "service_error", failureCategory: "unknown", failureReason: "google_accounts_response_unverified" };
+    }
+    const count = data.resourceNames.length;
+    if (count === 0) {
+      return { ok: false, status: "warning", failureCategory: "unknown", failureReason: "google_no_accessible_accounts" };
+    }
+    return { ok: true, status: "healthy", note: `${count} account(s) accessible; configured account access not verified` };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { ok: false, status: "service_error", failureCategory: "network", failureReason: msg };

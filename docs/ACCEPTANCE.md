@@ -134,3 +134,24 @@ Gate 3 implementation is **in progress**, not fully closed. Real-handler integra
   regressions. No real credentials, provider, login or deployment was exercised.
   Full suite/typecheck/build and canonical staging restart/auth verification remain
   for main; apply guards and rollout flags are unchanged.
+
+### ACU-T02 / ACU-1d — Google debug health correction (local fixtures)
+
+Scope: `GET /api/google/debug` → real `googleAdsClient` → mocked Google Ads SDK query boundary. This is a live account-read diagnostic, separate from saved credentials / callback success (`db3ad2d`). Configuration presence alone never proves authentication or account access.
+
+| Source / consumer | Evidence and behavior |
+| --- | --- |
+| Google debug | No repository UI consumer found. Previously returned `ok:true, accounts:[]` when every account query failed because breakdown filtered rejected promises. Now uses request-local attempted/accounts/errors evidence. |
+| Debug: all account reads fail (including invalid_client / permission failures) | `ok:false`, `status:failed`, sanitized `account_reads_failed`; per-account reason `account_read_failed`. No raw provider text, token URLs, client IDs from errors, or account metrics returned. |
+| Debug: some reads fail | `ok:false`, `status:partial`; successful scoped account identities plus sanitized failed identities. |
+| Debug: all configured scoped reads succeed with zero campaign rows | `ok:true`, `status:account_readable`. Successful campaign query proves account readability; it does not assert active campaigns or useful metrics. |
+| Debug: no configured scoped accounts | `ok:false`, `status:unverified`, `no_verified_accounts`; no provider call. An empty list alone cannot establish health. |
+| Debug: missing credentials / unauthorized session / role / no company scope | Missing config is explicit; 401/403 guards run before provider reads. Credential visibility uses existing `guardViewCredentials`; only authorized company IDs reach provider. |
+| Connector Health UI | `components/settings/ConnectorHealth.tsx` calls `/api/connectors/health` and connector test endpoints → engine → `checks/google.ts`; it does **not** consume debug. Checker independently refreshes token and lists accessible customers. No UI/engine patch in this slice. |
+| Saved OAuth status | `/api/connect/status` reports stored connection presence; settings test and callback/storage remain unchanged. Presence is not proof of account readability. |
+
+Compatibility: legacy `getAccountBreakdown()` still returns successful summaries and updates `lastBreakdownErrors` (including throwing on absent customer config). New `getAccountBreakdownResult()` returns local evidence and never reads/writes that singleton snapshot, preventing overlapping health reads from mixing results. Error details remain internal legacy data; debug exposes fixed reason codes only.
+
+Validation: `npx vitest run tests/google-debug-health.test.ts` — 11 tests passed; `npx eslint app/api/google/debug/route.ts tests/google-debug-health.test.ts` — passed. Including `lib/google-client.ts` in focused lint reports two pre-existing `no-explicit-any` errors in unchanged account-budget helpers (current lines 572/574), plus an existing unused-disable warning at line 152; verified against HEAD, left outside scope. Covers actual handler/client with provider boundary mocked: invalid_client all-failed, partial, zero campaigns, no accounts, missing credentials, auth/role/scope before provider, scoped account filtering, concurrent reads and legacy snapshot preservation.
+
+Limits: debug fixture evidence only; no real provider/network or host verification. Main additionally hardened independent Google connector checker: malformed/missing resourceNames returns service_error, empty list returns warning with ok:false, valid list proves listing only (not configured campaign read access). Seven focused checker cases cover these boundaries. Snapshot/engine configuration provenance and credential-change invalidation still require follow-up; no claim of full layered health completion. No OAuth callback/storage or execution guard changes. ACU-1d runtime acceptance remains pending.

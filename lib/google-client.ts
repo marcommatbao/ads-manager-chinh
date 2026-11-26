@@ -407,30 +407,32 @@ class GoogleAdsClient {
     from: string;
     to: string;
   }): Promise<GoogleAccountBreakdown[]> {
-    const ids = this.customerIds;
-    if (ids.length === 0) throw new Error("No Google Ads customer IDs configured.");
+    if (!this.customerIds.length) throw new Error("No Google Ads customer IDs configured.");
+    const result = await this.getAccountBreakdownResult(dateRange);
+    // Legacy consumers keep their existing snapshot; health uses the local result.
+    this.lastBreakdownErrors = result.errors;
+    return result.accounts;
+  }
 
+  /** Request-local evidence: never consult lastBreakdownErrors for health. */
+  async getAccountBreakdownResult(
+    dateRange: { from: string; to: string },
+    companies: string[] = companyIds(),
+  ) {
+    const ids = [...new Set(companies.map(id => gatewayEnabled()
+      ? gatewayCustomerIdFor(id) ?? ""
+      : envFor(id, "GOOGLE_ADS_CUSTOMER_ID")).filter(Boolean))];
     const results = await Promise.allSettled(
       ids.map(customerId => this.fetchSummaryForAccount(customerId, dateRange))
     );
-
-    // Tài khoản nào lỗi thì GHI LẠI, không lặng lẽ biến mất. Bản cũ chỉ lọc
-    // `fulfilled` rồi trả về — một tài khoản hỏng nghĩa là tổng chi tiêu Google
-    // trên Dashboard THIẾU HẲN phần đó, mà giao diện vẫn báo thành công và
-    // không có gì để người dùng nghi ngờ.
-    this.lastBreakdownErrors = results
-      .map((r, i) => ({ r, customerId: ids[i] }))
-      .filter(x => x.r.status === "rejected")
-      .map(x => {
-        const reason = (x.r as PromiseRejectedResult).reason;
-        const message = reason instanceof Error ? reason.message : String(reason);
-        console.error(`[GoogleAdsClient] getAccountBreakdown[${x.customerId}] failed:`, message);
-        return { accountId: x.customerId, accountName: this.accountName(x.customerId), message };
-      });
-
-    return results
+    const errors = results.flatMap((r, i) => r.status === "rejected" ? [{
+      accountId: ids[i], accountName: this.accountName(ids[i]),
+      message: r.reason instanceof Error ? r.reason.message : String(r.reason),
+    }] : []);
+    const accounts = results
       .filter((r): r is PromiseFulfilledResult<GoogleAccountBreakdown> => r.status === "fulfilled")
       .map(r => r.value);
+    return { attempted: ids.length, accounts, errors };
   }
 
   /**
