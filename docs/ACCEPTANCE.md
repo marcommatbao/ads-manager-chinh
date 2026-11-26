@@ -155,3 +155,36 @@ Compatibility: legacy `getAccountBreakdown()` still returns successful summaries
 Validation: `npx vitest run tests/google-debug-health.test.ts` — 11 tests passed; `npx eslint app/api/google/debug/route.ts tests/google-debug-health.test.ts` — passed. Including `lib/google-client.ts` in focused lint reports two pre-existing `no-explicit-any` errors in unchanged account-budget helpers (current lines 572/574), plus an existing unused-disable warning at line 152; verified against HEAD, left outside scope. Covers actual handler/client with provider boundary mocked: invalid_client all-failed, partial, zero campaigns, no accounts, missing credentials, auth/role/scope before provider, scoped account filtering, concurrent reads and legacy snapshot preservation.
 
 Limits: debug fixture evidence only; no real provider/network or host verification. Main additionally hardened independent Google connector checker: malformed/missing resourceNames returns service_error, empty list returns warning with ok:false, valid list proves listing only (not configured campaign read access). Seven focused checker cases cover these boundaries. Snapshot/engine configuration provenance and credential-change invalidation still require follow-up; no claim of full layered health completion. No OAuth callback/storage or execution guard changes. ACU-1d runtime acceptance remains pending.
+
+### ACU-T02 follow-up — Google connector evidence identity (local fixtures)
+
+Google connector snapshots now require disk-only HMAC binding to the effective
+runtime OAuth values and origin, developer token, all company customer mappings,
+login customer, or gateway URL/install key/connection/account scope. Both check
+and success timestamps must be finite, nonfuture and less than one hour old.
+Config alone and legacy records without binding require recheck (warning).
+The HMAC key is process-local: restart/another process deliberately requires a
+new check; this slice does not claim cross-process durable proof. No secret or
+marker is added to public health records, maskedConfig or logs.
+
+Live checks capture identity before provider work and compare after; Google
+success from recordLiveOutcome is ignored because that API supplies no pre-call
+identity proof. Failures still record normally; non-Google behavior is retained.
+Gateway health requests obtain a fresh gateway token rather than reusing the
+connection-ID cache, which may belong to a previous installation URL/key.
+OAuth callback and settings writes need no new writes/hooks: their effective
+runtime credential changes invalidate the next snapshot automatically.
+
+Validation: `npx vitest run tests/google-health-binding.test.ts tests/google-connector-account-health.test.ts tests/google-debug-health.test.ts`
+— 39 tests passed, including fresh gateway token scope.
+Binding fixtures use a temporary health store and synthetic Google credentials.
+Coverage: unchanged live success, config without proof, OAuth fields, settings
+origin, all customer mapping names/login/developer token, gateway URL/key and
+connection/account scope, legacy marker, missing/invalid/stale/future success
+and future check timestamps, mid-check change, unbound traffic success,
+denied/service failures, non-Google success; actual GET health, POST refresh-all
+and POST connector test handlers serialize without the internal marker.
+Focused ESLint on changed connector modules and tests passed.
+No real provider/network, deploy, credential/data writes, dependencies or services;
+no tsc/full build. Listing success still proves accessible-account listing only,
+not configured account campaign access; runtime acceptance remains pending.

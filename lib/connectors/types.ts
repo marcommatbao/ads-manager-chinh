@@ -55,9 +55,14 @@ export interface ConnectorHealthRecord {
   note?: string;
 }
 
+/** Disk-only metadata. Never spread a stored record into a public response. */
+export interface StoredConnectorHealthRecord extends ConnectorHealthRecord {
+  googleEvidenceBinding?: string;
+}
+
 export interface ConnectorHealthFile {
   updatedAt: string;
-  records: Partial<Record<ConnectorId, ConnectorHealthRecord>>;
+  records: Partial<Record<ConnectorId, StoredConnectorHealthRecord>>;
 }
 
 export interface CheckResult {

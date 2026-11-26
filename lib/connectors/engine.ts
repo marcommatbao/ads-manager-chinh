@@ -6,9 +6,10 @@
 // ============================================================
 
 import { maskSecret } from "@/lib/settings/validators/credentials";
-import { saveHealthRecord, saveHealthRecords, getStoredHealth } from "./health-store";
+import { saveHealthRecord, getStoredHealth } from "./health-store";
 import { CONNECTOR_REGISTRY, getDescriptor, isConnectorDisabled } from "./registry";
 import type { ConnectorHealthRecord, ConnectorId, CheckResult, ConnectorStatus } from "./types";
+import { googleEvidenceBinding, freshEvidenceTime } from "./google-evidence";
 import { envSatisfied } from "@/lib/connect/env-satisfied";
 
 // ── Individual check dispatch ─────────────────────────────
@@ -94,7 +95,12 @@ export async function runLiveCheck(id: ConnectorId): Promise<ConnectorHealthReco
   const now     = new Date().toISOString();
   const stored  = getStoredHealth(id);
   const { configComplete, partialConfig } = computeConfigCompleteness(id);
-  const result  = await runCheck(id);
+  const binding = id === "google_ads" ? googleEvidenceBinding() : undefined;
+  let result = await runCheck(id);
+  const verified = id !== "google_ads" || (binding === googleEvidenceBinding() && result.ok && result.status === "healthy");
+  if (id === "google_ads" && result.ok && !verified) {
+    result = { ok: false, status: "warning", failureReason: "Google configuration changed; run Test Connection again", failureCategory: "invalid_config" };
+  }
 
   const record: ConnectorHealthRecord = {
     id,
@@ -111,8 +117,8 @@ export async function runLiveCheck(id: ConnectorId): Promise<ConnectorHealthReco
     needsRefresh:    detectNeedsRefresh(id, stored),
   };
 
-  await saveHealthRecord(record);
-  return record;
+  await saveHealthRecord({ ...record, ...(id === "google_ads" && verified ? { googleEvidenceBinding: binding } : {}) });
+  return id === "google_ads" ? snapshotAllConnectors().google_ads : record;
 }
 
 /**
@@ -137,6 +143,9 @@ export async function recordLiveOutcome(
   result: CheckResult,
 ): Promise<void> {
   try {
+    // This API has no pre-call identity proof. Google success cannot safely
+    // bind to credentials observed only AFTER the provider request.
+    if (id === "google_ads" && result.ok) return;
     const stored = getStoredHealth(id);
 
     if (result.ok && stored?.status === result.status && stored?.lastSuccess) {
@@ -202,6 +211,12 @@ export function snapshotAllConnectors(): Record<ConnectorId, ConnectorHealthReco
       derivedStatus   = stored?.status && ageMs < 3_600_000 ? stored.status : "warning";
     }
 
+    const googleNeedsRecheck = id === "google_ads" && stored?.status === "healthy" && (
+      stored?.googleEvidenceBinding !== googleEvidenceBinding()
+      || !freshEvidenceTime(stored?.lastChecked) || !freshEvidenceTime(stored?.lastSuccess)
+    );
+    if (googleNeedsRecheck && derivedStatus === "healthy") derivedStatus = "warning";
+
     out[id] = {
       id,
       status:          derivedStatus,
@@ -218,11 +233,11 @@ export function snapshotAllConnectors(): Record<ConnectorId, ConnectorHealthReco
       // nothing to act on.
       failureReason:   derivedStatus === "healthy" || derivedStatus === "disabled"
                          ? null
-                         : (stored?.failureReason ?? null),
+                         : (googleNeedsRecheck ? "Google live evidence is missing, expired or configuration changed; run Test Connection again" : (stored?.failureReason ?? null)),
       failureCategory: stored?.failureCategory ?? null,
       maskedConfig:    buildMaskedConfig(id),
       needsRefresh:    detectNeedsRefresh(id, stored),
-      note:            stored?.note,
+      note:            googleNeedsRecheck ? undefined : stored?.note,
     };
   }
 

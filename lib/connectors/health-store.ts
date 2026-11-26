@@ -7,7 +7,7 @@ import fs from "fs";
 import path from "path";
 import { withFileLock } from "@/lib/file-lock";
 import { writeFileAtomic } from "@/lib/fs-atomic";
-import type { ConnectorHealthFile, ConnectorHealthRecord, ConnectorId } from "./types";
+import type { ConnectorHealthFile, StoredConnectorHealthRecord, ConnectorId } from "./types";
 
 const HEALTH_FILE = path.join(process.cwd(), "data", "connector-health.json");
 
@@ -30,7 +30,7 @@ export function getAllStoredHealth(): ConnectorHealthFile {
 /**
  * Read a single connector's stored health record (null if never checked).
  */
-export function getStoredHealth(id: ConnectorId): ConnectorHealthRecord | null {
+export function getStoredHealth(id: ConnectorId): StoredConnectorHealthRecord | null {
   return readHealthFile().records[id] ?? null;
 }
 
@@ -38,7 +38,7 @@ export function getStoredHealth(id: ConnectorId): ConnectorHealthRecord | null {
  * Persist one or more health records atomically.
  */
 export async function saveHealthRecords(
-  updates: Partial<Record<ConnectorId, ConnectorHealthRecord>>,
+  updates: Partial<Record<ConnectorId, StoredConnectorHealthRecord>>,
 ): Promise<void> {
   await withFileLock(HEALTH_FILE, async () => {
     const current = readHealthFile();
@@ -54,6 +54,6 @@ export async function saveHealthRecords(
 /**
  * Persist a single record.
  */
-export async function saveHealthRecord(record: ConnectorHealthRecord): Promise<void> {
+export async function saveHealthRecord(record: StoredConnectorHealthRecord): Promise<void> {
   await saveHealthRecords({ [record.id]: record });
 }

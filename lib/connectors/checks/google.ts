@@ -2,7 +2,9 @@
 import type { CheckResult } from "../types";
 import { googleDevToken } from "@/lib/google-ads-client";
 import { envSatisfied } from "@/lib/connect/env-satisfied";
-import { GatewayError, gatewayEnabled, getGatewayToken } from "@/lib/connect/gateway";
+import { GatewayError, gatewayEnabled, gatewayFetch } from "@/lib/connect/gateway";
+
+import { readConnect } from "@/lib/connect/store";
 
 interface TokenResponse {
   access_token?: string;
@@ -14,7 +16,13 @@ async function getAccessToken(): Promise<{ token: string } | { error: string; ca
   // Chế độ cổng: token xin từ Cổng kết nối Mắt Bão (bản cài không có client secret / refresh token).
   if (gatewayEnabled()) {
     try {
-      return { token: await getGatewayToken("google") };
+      // Health evidence must come from this scope now, not a token cached by
+      // connection ID before the installation URL/key changed.
+      const connectionId = readConnect().google?.connectionId;
+      if (!connectionId) return { error: "Google gateway connection missing", category: "auth" };
+      const response = await gatewayFetch<{ accessToken: string }>("/api/v1/token", { body: { connectionId } });
+      if (!response.accessToken) return { error: "Google gateway token missing", category: "auth" };
+      return { token: response.accessToken };
     } catch (e) {
       const network = e instanceof GatewayError && (e.code === "unreachable" || e.status >= 500);
       return { error: e instanceof Error ? e.message : String(e), category: network ? "network" : "auth" };
