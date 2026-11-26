@@ -78,3 +78,48 @@ Gate 3 implementation is **in progress**, not fully closed. Real-handler integra
 - No helper/route/collector integration was added: an always-unavailable helper without a consumer would not establish this contract. Existing `approvable:false`, missing-attribution/profit, learning/maturity and currency/unit guards are unchanged. Unblocking requires an existing authoritative, company/account/provider-scoped campaign binding plus source availability/completeness/read-time evidence; none was found in the inspected source contracts. No new Odoo mapping is assumed.
 - Focused existing attribution suites: **4 files / 11 tests PASS**, covering company denial at the report route, unique/ambiguous/duplicate matching, MBI refusal and explicit Odoo failure. These do **not** certify stale/absent/zero-real-versus-unavailable behavior at provider campaign scope; that integration and its acceptance tests remain **BLOCKED**. No live provider/network calls, services, migrations, dependency changes, deploy, staging, commit or push were performed. Full suite/build remain for main.
 - Existing collector/consumer/profit guard regression: `campaign-snapshot`, `meta-campaign-snapshot`, `snapshot-consumer`, `profit-evaluator` — **4 files / 52 tests PASS**. Scoped ESLint on the three inspected attribution libraries and four attribution test files: **PASS**. No new tests or runtime code were added in this feasibility-only step.
+
+### ACU-T01 — bounded Google credential durability/provenance slice
+
+- Repro/audit: the previous Google settings writer assigned `process.env` before
+  encryption/atomic write, without `env-origin` markers. Startup `applySaved`
+  retains nonempty env values. A successful-looking save could therefore differ
+  from a fresh process, or change runtime even when persistence failed. This is
+  a code-level defect, **not an established diagnosis of the live incident**.
+- Compatibility: retain env-first startup, legacy encrypted JSON fields and both
+  `customerIdMBC`/`customerIdMbc` spellings. No managed-source migration, extra secret
+  copy, revision hash, key/path change, deployment flag or provider call. Existing
+  OAuth callback can still read the file. Company maps merge under the existing
+  process-local file lock; concurrent writers in separate processes remain an
+  existing limitation.
+- Save writes encrypted settings atomically before using `patchFromSettings`;
+  unmarked env values remain effective. Read/decrypt/write failure returns an
+  error and leaves runtime unchanged. Masked input does not replace other secrets.
+  GET/POST provenance contains only field names, source categories and booleans;
+  supplied provenance is ignored. Existing masked GET fields remain compatible.
+- `persisted` on POST describes this write; `provenance.persisted` describes a
+  currently readable saved configuration, including one retained after a failed
+  write. `effective` compares saved nonempty fields with runtime; neither value
+  proves auth, permissions, account access, a stable mount, or a successful restart.
+  A no-change POST has `persisted: false` and still reports current provenance.
+- Source tracking uses `env-origin` markers, not inspection of an overwritten
+  value to reconstruct original deployment env. `origin: env` means nonempty,
+  unmarked process env. It cannot recover original env after a legacy writer
+  already overwrote it. `restartVerified: false` is intentional. Restart behavior
+  is conditional on the same env, key and storage; failed reads are `unknown`.
+- Fixture validation: focused Vitest covers actual settings POST → encrypted temp
+  file → fresh Node process using `applySaved`, raw env conflict vs settings-origin,
+  repeated saves, legacy file compatibility, masked placeholders, missing/wrong
+  keys, corrupt files, unusable paths, atomic replacement failure and redaction.
+  Tests supply synthetic child env and do not load deployment config or providers.
+- Remaining runtime acceptance (`needs_main_action`): establish the actual target,
+  persisted mount/path and key lifecycle through approved operational metadata,
+  then run restart verification on the canonical staging stack before claiming
+  ACU-1a/b/c complete on beta. Real auth rejection/permission/zero-account health
+  remains ACU-T02; this slice explicitly reports auth as `not-tested`.
+- Separate followup for main review: the existing Google OAuth callback has its
+  own legacy writer (direct env overwrite before persistence and swallowed read/
+  write errors). Its file format remains compatible; this bounded settings patch
+  does not change the callback/provider flow. Reusing `saveGoogleCredentials` there
+  and reporting save/conflict failures requires callback-specific tests. Avoid
+  claiming this slice fixes every OAuth-origin save path.

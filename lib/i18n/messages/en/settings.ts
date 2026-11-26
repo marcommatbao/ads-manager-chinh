@@ -2,6 +2,16 @@ import type { Translation } from "../../types"
 import type { settings as vi } from "../vi/settings"
 
 export const settings: Translation<typeof vi> = {
+  "settings.google.sources": "Running sources: env ({env}); Settings ({settings}).",
+  "settings.google.storageUnreadable": "Google settings file cannot be read/decrypted.",
+  "settings.google.storageMissing": "No saved Google settings file.",
+  "settings.google.storageReadable": "Saved Google settings file is readable.",
+  "settings.google.envConflict": "Env takes precedence and differs from saved settings; restarting with the same env keeps the conflict. Ask an administrator to check the configuration source.",
+  "settings.google.savedEffective": "Saved fields currently match the running configuration.",
+  "settings.google.savedInactive": "Saved settings are not confirmed fully effective.",
+  "settings.google.restartCondition": "Reload after restart requires the same env, encryption key and storage. Save status does not verify Google connectivity.",
+  "settings.google.configSaved": "Google configuration saved. Review configuration source status and test the connection separately.",
+
   "settings.tab.apiKeys": "API keys",
   "settings.tab.budget": "Budget",
   "settings.tab.revenue": "Revenue",

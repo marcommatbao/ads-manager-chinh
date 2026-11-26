@@ -376,3 +376,10 @@ Tổng điểm có trọng số bằng nhau = 60%. Ưu tiên kế tiếp: deploy
 - P&L and monthly Report API now reuse shared source IDs; MKT revenue/name-based report, vi/en wording and data requirements updated to seven sources. Existing team/type/payment/date rules unchanged. Notification-only source remains [29].
 - Main full regression 302 PASS / 71 skipped / 0 failed; focused source/P&L 14 PASS. Worker wrapper failed after leaving edits; main independently reviewed/tested. Core changed-file scoped lint PASS; KpiTab baseline has 3 pre-existing setState-in-effect errors + 1 warning, reproduced against HEAD. No unrelated UI fixes.
 - Typecheck and production build PASS (exit 0); Odoo route lint and GAQL date check PASS. No live data write, deployment or claim of changed dashboard totals yet.
+
+## ACU-T01 first implementation slice — 2026-11-26
+
+- Executing canonical ADSCOMMAND-UPGRADE-PLAN.md P1. Google settings now use a shared encrypted store/provenance helper, persist before runtime changes and retain env-first compatibility. Infra conflict is reported rather than temporarily overwriting infra values and reverting on restart.
+- GET/POST report masked origin/storage/effective/conflict metadata, auth not-tested and restartVerified=false. UI no longer labels save as successful Google connection; wording proposals in vi/en. No provider/host config touched.
+- Full regression 313 PASS / 71 skipped / 0 failed. Initial TypeScript failure in synthetic child env fixed with NODE_ENV=test; rerun typecheck/core scoped lint/focused durability 11 tests PASS. Settings UI baseline lint reproduces one pre-existing setState effect error and three warnings. Production build PASS (exit 0); final durability+guard rerun 12/12 PASS.
+- Worker wrapper codex_turn_failed after edits; main reviewed and independently verified. Legacy OAuth callback writer remains separate and unsafe on persistence failure; callback-specific integration/tests are next, not claimed fixed. Host volume/key/env provenance and actual restart/redeploy remain unverified.

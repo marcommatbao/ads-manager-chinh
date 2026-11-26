@@ -3,6 +3,7 @@
 import { CompanyIntegrationIds } from "@/components/settings/CompanyIntegrationIds";
 import { isCompany, hasModule } from "@/lib/companies/registry";
 import { useCompaniesVersion } from "@/lib/companies/use-companies";
+import type { GoogleCredentialProvenance } from "@/lib/settings/google-credentials";
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -197,6 +198,7 @@ function SettingsContent() {
   const [metaSaving, setMetaSaving] = useState(false);
   const [metaTesting, setMetaTesting] = useState(false);
   const [metaResult, setMetaResult] = useState<TestResult | null>(null);
+  const [googleProvenance, setGoogleProvenance] = useState<GoogleCredentialProvenance | null>(null);
   const [googleSaving, setGoogleSaving] = useState(false);
   const [googleTesting, setGoogleTesting] = useState(false);
   const [googleResult, setGoogleResult] = useState<TestResult | null>(null);
@@ -268,8 +270,10 @@ function SettingsContent() {
         customerIdMBC?: string;
         customerIdMBI?: string;
         loginCustomerId?: string;
+        provenance?: GoogleCredentialProvenance;
       }) => {
         if (data.ok) {
+          setGoogleProvenance(data.provenance ?? null);
           setValues((prev) => ({
             ...prev,
             ...(data.developerToken  ? { googleDeveloperToken: data.developerToken }   : {}),
@@ -422,11 +426,11 @@ function SettingsContent() {
         }),
       });
       const text = await res.text();
-      let data: { ok: boolean; message?: string; error?: string };
+      let data: { ok: boolean; message?: string; error?: string; provenance?: GoogleCredentialProvenance };
       try { data = JSON.parse(text); } catch { throw new Error(t("settings.err.server", { status: res.status, text: text.slice(0, 120) })); }
+      setGoogleProvenance(data.provenance ?? null);
       if (data.ok) {
-        setStatus((s) => ({ ...s, google: true }));
-        setGoogleResult({ ok: true, message: t("settings.google.saved") });
+        setGoogleResult({ ok: true, message: t("settings.google.configSaved") });
       } else {
         setGoogleResult({ ok: false, message: data.error ?? data.message ?? t("settings.err.saveFailed") });
       }
@@ -739,6 +743,20 @@ function SettingsContent() {
 
             {section.platform === "google" && (
               <div className="pt-2 space-y-3">
+                {googleProvenance && (
+                  <p role="status" className="text-sm text-slate-600">
+                    {t(googleProvenance.storage === "unreadable" ? "settings.google.storageUnreadable"
+                      : googleProvenance.storage === "missing" ? "settings.google.storageMissing"
+                      : "settings.google.storageReadable")}{" "}
+                    {t(googleProvenance.restartConflict ? "settings.google.envConflict"
+                      : googleProvenance.effective ? "settings.google.savedEffective" : "settings.google.savedInactive")}{" "}
+                    {t("settings.google.sources", {
+                      env: googleProvenance.fields.filter((f) => f.origin === "env").map((f) => f.field).join(", ") || "—",
+                      settings: googleProvenance.fields.filter((f) => f.origin === "settings").map((f) => f.field).join(", ") || "—",
+                    })}{" "}
+                    {t("settings.google.restartCondition")}
+                  </p>
+                )}
                 {googleResult && (
                   <div className={cn(
                     "flex items-center gap-2 text-sm rounded-lg px-3 py-2",

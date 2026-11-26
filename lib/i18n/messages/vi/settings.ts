@@ -1,5 +1,15 @@
 // Khu "settings" — bản gốc tiếng Việt. Khoá dạng "settings.tên". Giữ NGUYÊN câu tiếng Việt đang hiển thị.
 export const settings = {
+  "settings.google.sources": "Nguồn đang chạy: env ({env}); Cài đặt ({settings}).",
+  "settings.google.storageUnreadable": "Không đọc/giải mã được tệp cấu hình Google.",
+  "settings.google.storageMissing": "Chưa có tệp cấu hình Google đã lưu.",
+  "settings.google.storageReadable": "Đọc được tệp cấu hình Google đã lưu.",
+  "settings.google.envConflict": "Nguồn env đang được ưu tiên và khác cấu hình đã lưu; restart với cùng env vẫn xung đột. Nhờ quản trị kiểm tra nguồn cấu hình.",
+  "settings.google.savedEffective": "Các trường đã lưu hiện khớp cấu hình đang chạy.",
+  "settings.google.savedInactive": "Chưa xác nhận cấu hình đã lưu có hiệu lực đầy đủ.",
+  "settings.google.restartCondition": "Nạp lại sau restart cần giữ nguyên env, khoá mã hoá và storage. Trạng thái lưu không xác nhận kết nối Google.",
+  "settings.google.configSaved": "Đã lưu cấu hình Google. Xem trạng thái nguồn cấu hình; hãy kiểm tra kết nối riêng.",
+
   "settings.tab.apiKeys": "API Keys",
   "settings.tab.budget": "Ngân sách",
   "settings.tab.revenue": "Doanh Thu",

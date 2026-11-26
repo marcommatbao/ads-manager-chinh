@@ -5,77 +5,15 @@ import { getCurrentUser } from "@/lib/auth";
 import { maskSecret, isMaskedPlaceholder } from "@/lib/settings/validators/credentials";
 import { writeAuditEntry } from "@/lib/settings/audit";
 import { guardViewCredentials, guardEditCredentials } from "@/lib/settings/guards";
-import { encryptFields, decryptFields } from "@/lib/crypto/data-encryption";
-import { withFileLock } from "@/lib/file-lock";
-import fs from "fs";
-import { writeFileAtomicSync } from "@/lib/fs-atomic";
 import path from "path";
+import { readGoogleCredentials, saveGoogleCredentials, googleCredentialProvenance, type GoogleSettings } from "@/lib/settings/google-credentials";
 import { cleanCompanyMap, digitsOnly, envSuffix } from "@/lib/settings/company-ids";
 import { companyIds, companyLabel } from "@/lib/companies";
 
 const SETTINGS_PATH = path.resolve(process.cwd(), "data/google-settings.json");
 
-type GoogleSettings = {
-  developerToken?: string;
-  clientId?: string;
-  clientSecret?: string;
-  refreshToken?: string;
-  customerIdMBC?: string;
-  customerIdMBI?: string;
-  loginCustomerId?: string;
-  /** Đợt 21 A4: mã khách hàng theo MỌI công ty của bản cài (MBC/MBI vẫn dùng 2 trường cũ). */
-  customerIds?: Record<string, string>;
-};
-
-// Real secrets only — clientId/customerIds/loginCustomerId are account
-// identifiers, not credentials, and stay plaintext (see file header in
-// lib/crypto/data-encryption.ts for why field-level, not whole-file).
-const ENCRYPTED_FIELDS = ["developerToken", "clientSecret", "refreshToken"] as const;
-
 function readSettings(): GoogleSettings {
-  try {
-    if (fs.existsSync(SETTINGS_PATH)) {
-      const raw = JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf8")) as GoogleSettings;
-      return decryptFields(raw, ENCRYPTED_FIELDS);
-    }
-  } catch { /* ignore */ }
-  return {};
-}
-
-/** Đợt 21 A4 (soát bảo mật): đọc để GHI — lỗi đọc / giải mã thì NÉM, không trả {} (trả {} rồi ghi = xoá sạch khoá đã lưu khác). */
-function readSettingsForWrite(): ReturnType<typeof readSettings> {
-  if (!fs.existsSync(SETTINGS_PATH)) return {};
-  const raw = JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf8"));
-  return decryptFields(raw, ENCRYPTED_FIELDS) as ReturnType<typeof readSettings>;
-}
-
-async function saveSettings(settings: GoogleSettings): Promise<{ persisted: boolean }> {
-  return withFileLock(SETTINGS_PATH, async () => {
-    const existing = readSettingsForWrite();
-    const merged = { ...existing, ...settings };
-
-    if (merged.developerToken)  process.env.GOOGLE_ADS_DEVELOPER_TOKEN = merged.developerToken;
-    if (merged.clientId)        process.env.GOOGLE_ADS_CLIENT_ID = merged.clientId;
-    if (merged.clientSecret)    process.env.GOOGLE_ADS_CLIENT_SECRET = merged.clientSecret;
-    if (merged.refreshToken)    process.env.GOOGLE_ADS_REFRESH_TOKEN = merged.refreshToken;
-    if (merged.customerIdMBC)   process.env.GOOGLE_ADS_CUSTOMER_ID_MBC = merged.customerIdMBC;
-    if (merged.customerIdMBI)   process.env.GOOGLE_ADS_CUSTOMER_ID_MBI = merged.customerIdMBI;
-    if (merged.loginCustomerId) process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID = merged.loginCustomerId;
-    for (const [co, id] of Object.entries(merged.customerIds ?? {})) {
-      const name = `GOOGLE_ADS_CUSTOMER_ID_${envSuffix(co)}`;
-      if (id) process.env[name] = id; else if (settings.customerIds && co in settings.customerIds) delete process.env[name]; // xoá trắng = bỏ ngay
-    }
-
-    try {
-      fs.mkdirSync(path.dirname(SETTINGS_PATH), { recursive: true });
-      const toWrite = encryptFields(merged, ENCRYPTED_FIELDS);
-      writeFileAtomicSync(SETTINGS_PATH, JSON.stringify(toWrite, null, 2));
-      return { persisted: true };
-    } catch (e) {
-      console.warn("[settings/google] Could not persist to disk:", e);
-      return { persisted: false };
-    }
-  });
+  try { return readGoogleCredentials(SETTINGS_PATH); } catch { return {}; }
 }
 
 // GET — masked values; never expose raw secrets
@@ -98,6 +36,7 @@ export async function GET() {
 
   return NextResponse.json({
     ok: true,
+    provenance: googleCredentialProvenance(SETTINGS_PATH, envSuffix),
     // customer IDs are not secrets — return as-is
     customerIdMBC:   raw.customerIdMBC,
     customerIdMBI:   raw.customerIdMBI,
@@ -134,11 +73,16 @@ export async function POST(request: NextRequest) {
     customerIds?: Record<string, string>;
   };
 
+  for (const field of ["developerToken", "clientId", "clientSecret", "refreshToken"] as const) {
+    if (body[field] !== undefined && typeof body[field] !== "string") {
+      return NextResponse.json({ ok: false, error: "Credential fields must be strings." }, { status: 400 });
+    }
+  }
   const settings: GoogleSettings = {};
   if (body.customerIds !== undefined) {
     const c = cleanCompanyMap(body.customerIds, [10, 10]);
     if (c.errors.length) return NextResponse.json({ ok: false, error: c.errors.join(" · ") }, { status: 400 });
-    settings.customerIds = { ...(readSettings().customerIds ?? {}), ...c.map };
+    settings.customerIds = c.map;
   }
   if (body.developerToken  && !isMaskedPlaceholder(body.developerToken))  settings.developerToken  = body.developerToken;
   if (body.clientId        && !isMaskedPlaceholder(body.clientId))        settings.clientId        = body.clientId;
@@ -154,12 +98,12 @@ export async function POST(request: NextRequest) {
   }
 
   if (Object.keys(settings).length === 0) {
-    return NextResponse.json({ ok: true, message: "Không có thay đổi mới nào để lưu.", persisted: false });
+    return NextResponse.json({ ok: true, message: "Không có thay đổi mới nào để lưu.", persisted: false, provenance: googleCredentialProvenance(SETTINGS_PATH, envSuffix) });
   }
 
-  let persisted: boolean;
-  try { ({ persisted } = await saveSettings(settings)); }
-  catch { return NextResponse.json({ ok: false, error: "Không đọc / giải mã được khoá đã lưu (khoá mã hoá DATA_ENCRYPTION_KEY đã đổi hoặc tệp hỏng) — KHÔNG ghi đè để khỏi mất các khoá khác. Liên hệ quản trị." }, { status: 500 }); }
+  let provenance;
+  try { provenance = await saveGoogleCredentials(SETTINGS_PATH, settings, envSuffix); }
+  catch { return NextResponse.json({ ok: false, persisted: false, provenance: googleCredentialProvenance(SETTINGS_PATH, envSuffix), error: "Không lưu được cấu hình Google (lỗi đọc, giải mã hoặc ghi tệp). Chưa thay đổi credentials đang chạy; liên hệ quản trị kiểm tra storage/key." }, { status: 500 }); }
 
   await writeAuditEntry(
     "credentials_google", user, "update",
@@ -167,9 +111,9 @@ export async function POST(request: NextRequest) {
     null, null, "ALL",
   );
 
-  const message = persisted
-    ? "Google Ads credentials đã lưu."
-    : "Credentials áp dụng (in-memory). Disk write thất bại — sẽ reset khi restart.";
+  const message = provenance.restartConflict
+    ? "Đã lưu vào tệp; env đang được ưu tiên. Cấu hình đã lưu chưa có hiệu lực đầy đủ và vẫn xung đột khi khởi động lại với cùng env."
+    : "Đã lưu và áp dụng cấu hình Google. Nạp lại sau restart cần giữ nguyên env, khoá mã hoá và storage; chưa kiểm tra xác thực Google.";
 
-  return NextResponse.json({ ok: true, message, persisted });
+  return NextResponse.json({ ok: true, message, persisted: true, effective: provenance.effective, restartConflict: provenance.restartConflict, provenance });
 }

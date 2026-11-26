@@ -362,6 +362,12 @@ Mỗi mini-spec/release báo tám mục, có artifact và giới hạn thực t�
 7. **Live Verification:** target/scope/commit/evidence hoặc PENDING với lý do; build/screenshot không thay runtime.
 8. **Remaining Limits / Follow-ups:** quyết định BA/ops, deferred, rollback và task tiếp theo; không đóng acceptance thiếu evidence.
 
+### Nhật ký thực thi ACU — cập nhật theo bằng chứng
+
+- 26/11/2026: bắt đầu ACU-T01, lát cắt Google settings persistence/provenance. Test POST thực → tệp mã hóa tạm → process mới; giữ env-first, báo conflict, write-before-runtime, UI không coi save là auth success.
+- Full regression 313 PASS / 71 skipped; sau sửa fixture NODE_ENV, TypeScript/core lint và 11 test durability PASS. Đây là local evidence, chưa runtime beta. Settings UI có lint effect lỗi từ baseline đã đối chứng, không tắt rule.
+- T01 chưa đánh dấu hoàn tất: OAuth callback writer riêng còn follow-up; host storage/key lifecycle/redeploy chưa được xác minh. Không có credential/volume/provider mutation hoặc activation.
+
 ## 15. Hợp đồng triển khai tối thiểu để bóc mini-spec
 
 Các field dưới đây là **PROPOSED**, không phải schema/API đang tồn tại; audit phải map sang type hiện có trước thêm.
