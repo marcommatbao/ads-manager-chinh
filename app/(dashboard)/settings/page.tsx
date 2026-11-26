@@ -234,7 +234,9 @@ function SettingsContent() {
     if (googleError) {
       setGoogleResult({ ok: false, message: t("settings.google.oauthError", { error: googleError }) });
     }
-    if (searchParams.get("google_connected") === "true") {
+    if (searchParams.get("google_oauth_saved") === "true") {
+      setGoogleResult({ ok: true, message: t("settings.google.oauthSaved") });
+    } else if (searchParams.get("google_connected") === "true") {
       setGoogleResult({ ok: true, message: t("settings.google.authorized") });
     }
   }, [searchParams, t]);

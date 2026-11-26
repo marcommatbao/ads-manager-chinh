@@ -2,6 +2,8 @@ import type { Translation } from "../../types"
 import type { settings as vi } from "../vi/settings"
 
 export const settings: Translation<typeof vi> = {
+  // Wording proposal — pending BA review.
+  "settings.google.oauthSaved": "Google OAuth configuration saved. Test the connection to verify ad account read access.",
   "settings.google.sources": "Running sources: env ({env}); Settings ({settings}).",
   "settings.google.storageUnreadable": "Google settings file cannot be read/decrypted.",
   "settings.google.storageMissing": "No saved Google settings file.",

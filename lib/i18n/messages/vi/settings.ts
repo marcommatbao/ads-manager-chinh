@@ -1,5 +1,7 @@
 // Khu "settings" — bản gốc tiếng Việt. Khoá dạng "settings.tên". Giữ NGUYÊN câu tiếng Việt đang hiển thị.
 export const settings = {
+  // ĐỀ XUẤT — chờ BA duyệt.
+  "settings.google.oauthSaved": "Đã lưu cấu hình OAuth Google. Hãy kiểm tra kết nối để xác minh quyền đọc tài khoản quảng cáo.",
   "settings.google.sources": "Nguồn đang chạy: env ({env}); Cài đặt ({settings}).",
   "settings.google.storageUnreadable": "Không đọc/giải mã được tệp cấu hình Google.",
   "settings.google.storageMissing": "Chưa có tệp cấu hình Google đã lưu.",

@@ -1,11 +1,9 @@
 // GET /api/google/callback — OAuth2 callback: exchange code → tokens → persist
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { encryptFields, decryptFields } from "@/lib/crypto/data-encryption";
-import { withFileLock } from "@/lib/file-lock";
-import fs from "fs";
-import { writeFileAtomicSync } from "@/lib/fs-atomic";
 import path from "path";
+import { saveGoogleCredentials } from "@/lib/settings/google-credentials";
+import { envSuffix } from "@/lib/settings/company-ids";
 import { guardEditCredentials } from "@/lib/settings/guards";
 import { writeAuditEntry } from "@/lib/settings/audit";
 import {
@@ -15,50 +13,6 @@ import {
 import { clearOAuthStateCookie, verifyOAuthState } from "@/lib/oauth-state";
 
 const SETTINGS_PATH = path.resolve(process.cwd(), "data/google-settings.json");
-
-type GoogleSettings = {
-  refreshToken?: string;
-  clientId?: string;
-  clientSecret?: string;
-  developerToken?: string;
-  customerIdMBC?: string;
-  customerIdMBI?: string;
-  loginCustomerId?: string;
-};
-
-// Must match app/api/settings/google/route.ts's ENCRYPTED_FIELDS — both
-// routes read/write the same data/google-settings.json file.
-const ENCRYPTED_FIELDS = ["developerToken", "clientSecret", "refreshToken"] as const;
-
-async function saveSettings(settings: GoogleSettings): Promise<void> {
-  await withFileLock(SETTINGS_PATH, async () => {
-    let existing: GoogleSettings = {};
-    try {
-      if (fs.existsSync(SETTINGS_PATH)) {
-        const raw = JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf8")) as GoogleSettings;
-        existing = decryptFields(raw, ENCRYPTED_FIELDS);
-      }
-    } catch { /* ignore */ }
-
-    const merged = { ...existing, ...settings };
-
-    if (merged.refreshToken)   process.env.GOOGLE_ADS_REFRESH_TOKEN = merged.refreshToken;
-    if (merged.clientId)       process.env.GOOGLE_ADS_CLIENT_ID = merged.clientId;
-    if (merged.clientSecret)   process.env.GOOGLE_ADS_CLIENT_SECRET = merged.clientSecret;
-    if (merged.developerToken) process.env.GOOGLE_ADS_DEVELOPER_TOKEN = merged.developerToken;
-    if (merged.customerIdMBC)  process.env.GOOGLE_ADS_CUSTOMER_ID_MBC = merged.customerIdMBC;
-    if (merged.customerIdMBI)  process.env.GOOGLE_ADS_CUSTOMER_ID_MBI = merged.customerIdMBI;
-    if (merged.loginCustomerId) process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID = merged.loginCustomerId;
-
-    try {
-      fs.mkdirSync(path.dirname(SETTINGS_PATH), { recursive: true });
-      const toWrite = encryptFields(merged, ENCRYPTED_FIELDS);
-      writeFileAtomicSync(SETTINGS_PATH, JSON.stringify(toWrite, null, 2));
-    } catch (e) {
-      console.warn("[callback/google] Could not persist to disk:", e);
-    }
-  });
-}
 
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
@@ -97,7 +51,7 @@ export async function GET(request: NextRequest) {
   // someone else's authorization code being pushed into our account — never
   // exchange it.
   if (!flow) return failRedirect("invalid_state");
-  if (error) return failRedirect(error);
+  if (error) return failRedirect("authorization_failed");
   if (!code) return failRedirect("no_code");
 
   if (isGA4) {
@@ -112,19 +66,15 @@ export async function GET(request: NextRequest) {
       const okRes = NextResponse.redirect(`${appUrl}/settings/ga4?ga4_connected=true`);
       okRes.headers.set("Set-Cookie", clearOAuthStateCookie());
       return okRes;
-    } catch (err) {
-      return failRedirect(err instanceof Error ? err.message : "ga4_token_exchange_failed");
+    } catch {
+      return failRedirect("ga4_token_exchange_failed");
     }
   }
 
   const clientId = process.env.GOOGLE_ADS_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET;
 
-  if (!clientId || !clientSecret) {
-    return NextResponse.redirect(
-      `${appUrl}/settings?google_error=missing_credentials`
-    );
-  }
+  if (!clientId || !clientSecret) return failRedirect("missing_credentials");
 
   try {
     const redirectUri = `${appUrl}/api/google/callback`;
@@ -148,23 +98,33 @@ export async function GET(request: NextRequest) {
       error_description?: string;
     };
 
-    if (tokenData.error || !tokenData.refresh_token) {
-      const msg = tokenData.error_description || tokenData.error || "token_exchange_failed";
-      return NextResponse.redirect(
-        `${appUrl}/settings?google_error=${encodeURIComponent(msg)}`
-      );
+    if (!tokenRes.ok || tokenData.error || typeof tokenData.refresh_token !== "string" || !tokenData.refresh_token.trim()) {
+      return failRedirect("token_exchange_failed");
     }
 
-    await saveSettings({ refreshToken: tokenData.refresh_token });
-    await writeAuditEntry("credentials_google", user, "update", "oauth_connect", null, null, "ALL");
+    // Persist the exact client pair used for this exchange, rather than letting
+    // stale saved counterparts replace settings-origin runtime credentials.
+    let provenance;
+    try {
+      provenance = await saveGoogleCredentials(SETTINGS_PATH, {
+        refreshToken: tokenData.refresh_token, clientId, clientSecret,
+      }, envSuffix);
+    } catch {
+      return failRedirect("credentials_persist_failed");
+    }
+    await writeAuditEntry("credentials_google", user, "update", "refreshToken, clientId, clientSecret", null, null, "ALL", {
+      note: provenance.effective
+        ? "oauth_saved_effective; google_api_read_not_tested"
+        : "oauth_saved_reconnect_required; google_api_read_not_tested",
+    });
+    if (!provenance.persisted || !provenance.effective) {
+      return failRedirect(provenance.restartConflict ? "reconnect_required_env_conflict" : "reconnect_required");
+    }
 
-    const okRes = NextResponse.redirect(`${appUrl}/settings?google_connected=true`);
+    const okRes = NextResponse.redirect(`${appUrl}/settings?google_oauth_saved=true`);
     okRes.headers.set("Set-Cookie", clearOAuthStateCookie());
     return okRes;
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "unknown_error";
-    return NextResponse.redirect(
-      `${appUrl}/settings?google_error=${encodeURIComponent(message)}`
-    );
+  } catch {
+    return failRedirect("oauth_callback_failed");
   }
 }

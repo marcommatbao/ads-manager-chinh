@@ -117,9 +117,20 @@ Gate 3 implementation is **in progress**, not fully closed. Real-handler integra
   then run restart verification on the canonical staging stack before claiming
   ACU-1a/b/c complete on beta. Real auth rejection/permission/zero-account health
   remains ACU-T02; this slice explicitly reports auth as `not-tested`.
-- Separate followup for main review: the existing Google OAuth callback has its
-  own legacy writer (direct env overwrite before persistence and swallowed read/
-  write errors). Its file format remains compatible; this bounded settings patch
-  does not change the callback/provider flow. Reusing `saveGoogleCredentials` there
-  and reporting save/conflict failures requires callback-specific tests. Avoid
-  claiming this slice fixes every OAuth-origin save path.
+- OAuth callback followup: Google Ads now reuses `saveGoogleCredentials`, including
+  encrypted persistence before runtime changes, fail-closed reads and env-first
+  precedence. It saves the client pair actually used for token exchange with the
+  new refresh token. Success requires both persisted and effective credentials;
+  `google_error=reconnect_required_env_conflict` reports a saved/env conflict
+  without a connection-success flag. Success redirects with `google_oauth_saved=true`,
+  not `google_connected=true`; Settings displays saved OAuth separately from account
+  connectivity and asks for a separate read test. Settings renders `google_error` as a
+  non-success result. Redirects use fixed error codes; audit contains field names
+  and a fixed outcome note, explicitly saying Google API reads were not tested.
+- Callback fixture validation: actual GET with mocked token-provider boundary and
+  isolated encrypted temp storage covers cold startup, atomic/unusable-path write
+  failures, corrupt/wrong-key preservation, infra refresh conflict, auth/RBAC/state
+  rejection before exchange/write, generic provider errors, and GA4 routing/save
+  regressions. No real credentials, provider, login or deployment was exercised.
+  Full suite/typecheck/build and canonical staging restart/auth verification remain
+  for main; apply guards and rollout flags are unchanged.
