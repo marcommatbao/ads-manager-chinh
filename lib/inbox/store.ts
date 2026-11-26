@@ -7,6 +7,8 @@
 //   • Đã làm → sau 7 ngày mà việc VẪN còn được sinh ra thì về Mới ("vẫn còn sau khi đã làm").
 // Việc không còn được sinh ra thì không hiện (trạng thái giữ 90 ngày rồi dọn).
 import fs from "fs"
+import { createHash, randomUUID } from "node:crypto"
+import { withFileLock } from "@/lib/file-lock"
 import path from "path"
 import { writeFileAtomicSync } from "@/lib/fs-atomic"
 import type { InboxItem, InboxSource } from "./build"
@@ -16,7 +18,7 @@ import { makeT, type TFunction } from "@/lib/i18n/translate"
 export type InboxStatus = "new" | "seen" | "snoozed" | "done" | "dismissed"
 // Nhãn chuyển sang ./labels.ts (file thuần, không phụ thuộc "fs") — re-export ở đây để không đổi chỗ import cũ.
 export { STATUS_LABEL } from "./labels"
-export interface ItemState { status: InboxStatus; at: string; by?: string; until?: string; reason?: string; moneyAt?: number | null }
+export interface ItemState { revision?: string; status: InboxStatus; at: string; by?: string; until?: string; reason?: string; moneyAt?: number | null }
 export interface InboxSnapshot {
   builtAt: string
   items: InboxItem[]
@@ -24,7 +26,7 @@ export interface InboxSnapshot {
   errors: { company: Company | "ALL"; source: InboxSource; error: string }[]
   digest?: { sentAt: string; keys: string[]; sent: boolean; notConfigured?: boolean; error?: string }
 }
-export interface InboxView extends InboxItem { status: InboxStatus; state: ItemState | null; resurfaced: string | null }
+export interface InboxView extends InboxItem { revision: string | null; status: InboxStatus; state: ItemState | null; resurfaced: string | null }
 
 const DIR = path.join(process.cwd(), "data")
 const SNAP = path.join(DIR, "inbox.json"), STATE = path.join(DIR, "inbox-state.json")
@@ -53,37 +55,64 @@ export function effective(item: Pick<InboxItem, "money">, st: ItemState | null |
 }
 
 export function viewItems(items: InboxItem[], states: Record<string, ItemState>, now: number = Date.now(), t: TFunction = makeT("vi")): InboxView[] {
-  return items.map((it) => { const st = states[it.key] ?? null; return { ...it, ...effective(it, st, now, t), state: st } })
+  return items.map((it) => { const st = states[it.key] ?? null; return { ...it, ...effective(it, st, now, t), state: st, revision: revisionOf(st) } })
 }
 
 /** Việc đang cần làm (vào top 5 / đếm "còn tồn"): Mới hoặc Đã xem. */
 export const isOpen = (v: Pick<InboxView, "status">) => v.status === "new" || v.status === "seen"
 
-export function validateStatusInput(x: unknown, t: TFunction = makeT("vi")): { key: string; status: InboxStatus; until?: string; reason?: string } | string {
+/** Stable legacy token without rewriting old rows. No state uses explicit null. */
+export function revisionOf(st: ItemState | null | undefined): string | null {
+  if (!st) return null
+  return st.revision ?? `legacy:${createHash("sha256").update(JSON.stringify([st.status, st.at, st.by ?? null, st.until ?? null, st.reason ?? null, st.moneyAt ?? null])).digest("hex")}`
+}
+export interface StatusInput { key: string; status: InboxStatus; expectedRevision: string | null; until?: string; reason?: string }
+export class InboxStatusError extends Error {
+  constructor(public status: number, public code: string) { super(code) }
+}
+
+export function validateStatusInput(x: unknown, t: TFunction = makeT("vi")): StatusInput | string {
   const b = (x ?? {}) as Record<string, unknown>
   if (typeof b.key !== "string" || !b.key) return t("libcase.w.err.missingKey")
-  if (!["new", "seen", "snoozed", "done", "dismissed"].includes(String(b.status))) return t("libcase.w.err.badStatus")
+  if (typeof b.status !== "string" || !["new", "seen", "snoozed", "done", "dismissed"].includes(b.status)) return t("libcase.w.err.badStatus")
+  if (b.expectedRevision !== null && (typeof b.expectedRevision !== "string" || !/^(?:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy:[0-9a-f]{64})$/.test(b.expectedRevision))) return t("overview.today.invalidRevision")
+  const expectedRevision = b.expectedRevision as string | null
   const status = b.status as InboxStatus
   if (status === "snoozed") {
     if (typeof b.until !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(b.until)) return t("libcase.w.err.snoozeDate")
-    return { key: b.key, status, until: `${b.until}T00:00:00+07:00` }
+    return { key: b.key, expectedRevision, status, until: `${b.until}T00:00:00+07:00` }
   }
   if (status === "dismissed") {
     const reason = typeof b.reason === "string" ? b.reason.trim() : ""
     if (reason.length < 3) return t("libcase.w.err.dismissReason")
-    return { key: b.key, status, reason: reason.slice(0, 500) }
+    return { key: b.key, expectedRevision, status, reason: reason.slice(0, 500) }
   }
-  return { key: b.key, status }
+  return { key: b.key, expectedRevision, status }
 }
 
-export function setItemStatus(input: { key: string; status: InboxStatus; until?: string; reason?: string }, by: string, now: Date = new Date()): ItemState {
-  const states = readStates()
-  const money = readSnapshot()?.items.find((i) => i.key === input.key)?.money ?? null
-  const st: ItemState = { status: input.status, at: now.toISOString(), by, ...(input.until ? { until: input.until } : {}), ...(input.reason ? { reason: input.reason } : {}), ...(input.status === "dismissed" ? { moneyAt: money } : {}) }
-  if (input.status === "new") delete states[input.key]
-  else states[input.key] = st
-  writeJson(STATE, pruneStates(states, now.getTime()))
-  return st
+/** Process-local file mutex only: not a cross-process/distributed CAS. */
+export async function setItemStatus(input: StatusInput, by: string, canAccess: (company: Company) => boolean, now: Date = new Date()): Promise<ItemState> {
+  return withFileLock(STATE, async () => {
+    const item = readSnapshot()?.items.find(i => i.key === input.key)
+    if (!item) throw new InboxStatusError(404, "itemNotFound")
+    if (!canAccess(item.company)) throw new InboxStatusError(403, "noCompanyAccess")
+    if (item.evidence) throw new InboxStatusError(403, "qualityReadOnly")
+    // Fail closed on damaged/unreadable state; only a missing file means empty.
+    let states: Record<string, ItemState>
+    try { states = JSON.parse(fs.readFileSync(STATE, "utf-8")) }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; states = {} }
+    if (!states || typeof states !== "object" || Array.isArray(states) || Object.values(states).some(state =>
+      !state || typeof state !== "object" || !["new", "seen", "snoozed", "done", "dismissed"].includes(state.status)
+      || typeof state.at !== "string" || !Number.isFinite(Date.parse(state.at)))) throw new Error("INBOX_STATE_UNAVAILABLE")
+    if (revisionOf(states[input.key]) !== input.expectedRevision) throw new InboxStatusError(409, "revisionConflict")
+    const st: ItemState = { revision: randomUUID(), status: input.status, at: now.toISOString(), by,
+      ...(input.until ? { until: input.until } : {}), ...(input.reason ? { reason: input.reason } : {}),
+      ...(input.status === "dismissed" ? { moneyAt: item.money } : {}) }
+    // Retain the new-state row too: deleting it would re-enable an old null token.
+    states[input.key] = st
+    writeJson(STATE, pruneStates(states, now.getTime()))
+    return st
+  })
 }
 
 export function pruneStates(states: Record<string, ItemState>, now: number): Record<string, ItemState> {

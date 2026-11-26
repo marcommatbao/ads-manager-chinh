@@ -1,0 +1,121 @@
+import fs from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { NextRequest } from "next/server"
+import { afterEach, beforeEach, expect, it, vi } from "vitest"
+import type { InboxItem } from "@/lib/inbox/build"
+const mocks = vi.hoisted(() => ({ user: vi.fn() }))
+vi.mock("@/lib/auth", () => ({ getCurrentUser: mocks.user }))
+vi.mock("@/lib/case/service", () => ({ CaseError: class extends Error {} }))
+vi.mock("@/lib/case/store", () => ({ readCase: vi.fn() }))
+vi.mock("@/lib/i18n/server", async () => { const { makeT } = await import("@/lib/i18n/translate"); return { getT: async () => makeT("en") } })
+vi.mock("@/lib/connectors/engine", () => ({ snapshotAllConnectors: () => ({ google_ads: null }) }))
+vi.mock("@/lib/teams-alert", () => ({ isTeamsAlertConfigured: () => false }))
+let dir: string
+let route: typeof import("@/app/api/inbox/route")
+let store: typeof import("@/lib/inbox/store")
+const item = (key = "MBC:search:fixture", company = "MBC"): InboxItem => ({ key, company, source: "search", kind: 2, title: "fixture", why: "fixture", money: 100, moneyLabel: "spend", href: "/", hrefLabel: "open", campaignIds: [] })
+const post = (body: object) => route.POST(new NextRequest("http://localhost/api/inbox", { method: "POST", body: JSON.stringify({ key: item().key, status: "seen", expectedRevision: null, ...body }) }))
+const getItem = async () => (await (await route.GET()).json()).items.find((i: InboxItem) => i.key === item().key)
+const stateFile = () => path.join(dir, "data/inbox-state.json")
+beforeEach(async () => {
+  vi.resetModules(); vi.clearAllMocks()
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), "inbox-revision-"))
+  vi.spyOn(process, "cwd").mockReturnValue(dir)
+  mocks.user.mockResolvedValue({ id: "fixture", email: "actor@fixture.invalid", role: "admin", companies: ["MBC"] })
+  route = await import("@/app/api/inbox/route"); store = await import("@/lib/inbox/store")
+  store.saveSnapshot({ builtAt: new Date().toISOString(), items: [item(), item("MBC:other"), item("MBI:other", "MBI")], errors: [] })
+})
+afterEach(() => { vi.restoreAllMocks(); fs.rmSync(dir, { recursive: true, force: true }) })
+it("parallel edits using GET token have one winner; reload and stale requests cannot overwrite", async () => {
+  const initial = await getItem(); expect(initial.revision).toBeNull()
+  const results = await Promise.all([post({ expectedRevision: initial.revision }), post({ status: "done", expectedRevision: initial.revision })])
+  expect(results.map(r => r.status).sort()).toEqual([200, 409])
+  const current = await getItem(); expect(current.revision).toBeTruthy()
+  expect((await post({ expectedRevision: initial.revision })).status).toBe(409)
+  expect((await post({ status: "new", expectedRevision: current.revision })).status).toBe(200)
+  const reopened = await getItem(); expect(reopened.status).toBe("new"); expect(reopened.revision).not.toBe(current.revision)
+  expect((await post({ expectedRevision: current.revision })).status).toBe(409)
+  expect((await post({ expectedRevision: null })).status).toBe(409)
+})
+it("two keys serialize without losing either state and actor comes only from server", async () => {
+  expect((await Promise.all([post({ by: "malicious" }), post({ key: "MBC:other" })])).map(r => r.status)).toEqual([200, 200])
+  const states = store.readStates(); expect(Object.keys(states)).toHaveLength(2)
+  expect(states[item().key].by).toBe("actor@fixture.invalid")
+})
+it("legacy revisions are stable, reads do not migrate rows, old token conflicts after update", async () => {
+  const legacy = { status: "seen", at: new Date().toISOString(), by: "legacy" }
+  fs.writeFileSync(stateFile(), JSON.stringify({ [item().key]: legacy }))
+  const bytes = fs.readFileSync(stateFile(), "utf8")
+  const first = await getItem(); expect(first.revision).toMatch(/^legacy:/)
+  expect((await getItem()).revision).toBe(first.revision)
+  expect(fs.readFileSync(stateFile(), "utf8")).toBe(bytes)
+  expect((await post({ expectedRevision: first.revision })).status).toBe(200)
+  expect((await post({ expectedRevision: first.revision })).status).toBe(409)
+})
+it.each([{ key: "MBI:other", code: 403 }, { key: "unknown", code: 404 }])("denies current company/missing item without state writes: %j", async ({ key, code }) => {
+  expect((await post({ key })).status).toBe(code); expect(fs.existsSync(stateFile())).toBe(false)
+})
+it.each([null, { id: "viewer", role: "viewer", companies: ["MBC"] }])("requires authenticated editor: %j", async user => {
+  mocks.user.mockResolvedValue(user); expect((await post({})).status).toBe(user ? 403 : 401)
+  expect(fs.existsSync(stateFile())).toBe(false)
+})
+it("requires saved snapshot and refuses persisted or guessed live quality evidence", async () => {
+  const { fromGoogleHealth } = await import("@/lib/inbox/evidence")
+  const quality = fromGoogleHealth(["MBC"], null)[0]
+  store.saveSnapshot({ builtAt: new Date().toISOString(), items: [quality], errors: [] })
+  expect((await post({ key: quality.key })).status).toBe(403)
+  fs.unlinkSync(path.join(dir, "data/inbox.json"))
+  expect((await post({})).status).toBe(404)
+  expect((await post({ key: quality.key })).status).toBe(404)
+  expect(fs.existsSync(stateFile())).toBe(false)
+})
+it.each([{ status: "resolved" }, { status: ["seen"] }, { expectedRevision: undefined }, { expectedRevision: "" }, { expectedRevision: 1 }, { expectedRevision: {} }, { expectedRevision: "guessed" }])("rejects malformed status/revision before writing: %j", async body => {
+  expect((await post(body)).status).toBe(400); expect(fs.existsSync(stateFile())).toBe(false)
+})
+it("seen/snooze/dismiss preserve effective resurfacing, audit and money baseline", async () => {
+  expect((await post({})).status).toBe(200)
+  const seen = await getItem(); expect(seen.status).toBe("seen")
+  expect((await post({ status: "snoozed", until: "2000-01-01", expectedRevision: seen.revision })).status).toBe(200)
+  const snoozed = await getItem(); expect(snoozed.status).toBe("new"); expect(snoozed.resurfaced).toBeTruthy(); expect(snoozed.state.until).toBe("2000-01-01T00:00:00+07:00")
+  expect((await post({ status: "dismissed", reason: "  fixture reason  ", expectedRevision: snoozed.revision })).status).toBe(200)
+  const dismissed = await getItem(); expect(dismissed.status).toBe("dismissed"); expect(dismissed.state.reason).toBe("fixture reason"); expect(dismissed.state.moneyAt).toBe(100)
+  store.saveSnapshot({ builtAt: new Date().toISOString(), items: [{ ...item(), money: 151 }], errors: [] })
+  expect((await getItem()).status).toBe("new"); expect((await getItem()).revision).toBe(dismissed.revision)
+})
+it.each(["[]", "null", '{"broken":{"status":"seen"}}'])('rejects malformed persisted state without overwriting: %s', async bytes => {
+  fs.writeFileSync(stateFile(), bytes)
+  vi.spyOn(console, "error").mockImplementation(() => {})
+  expect((await post({})).status).toBe(500)
+  expect(fs.readFileSync(stateFile(), "utf8")).toBe(bytes)
+})
+it("atomic write failure returns failure and leaves prior bytes/revision intact", async () => {
+  await post({}); const current = await getItem(); const before = fs.readFileSync(stateFile(), "utf8")
+  vi.spyOn(fs, "renameSync").mockImplementation(() => { throw new Error("fixture atomic failure") })
+  const log = vi.spyOn(console, "error").mockImplementation(() => {})
+  expect((await post({ status: "done", expectedRevision: current.revision })).status).toBe(500)
+  expect(fs.readFileSync(stateFile(), "utf8")).toBe(before); expect((await getItem()).revision).toBe(current.revision)
+  expect(log).toHaveBeenCalled()
+})
+
+it("future snooze and recent done stay closed; expired done rejoins notification candidates", async () => {
+  const { pickDigest } = await import("@/lib/inbox/build")
+  const now = new Date()
+  await store.setItemStatus({ key: item().key, status: "snoozed", until: "2099-01-01T00:00:00+07:00", expectedRevision: null }, "fixture", () => true, now)
+  let views = store.viewItems([item()], store.readStates(), now.getTime())
+  expect(views[0].status).toBe("snoozed")
+  expect(pickDigest(views.filter(store.isOpen))).toHaveLength(0)
+  await store.setItemStatus({ key: item().key, status: "done", expectedRevision: views[0].revision }, "fixture", () => true, now)
+  views = store.viewItems([item()], store.readStates(), now.getTime())
+  expect(views[0].status).toBe("done")
+  expect(pickDigest(views.filter(store.isOpen))).toHaveLength(0)
+  views = store.viewItems([item()], store.readStates(), now.getTime() + 8 * 86400000)
+  expect(views[0].resurfaced).toBeTruthy()
+  expect(pickDigest(views.filter(store.isOpen))).toHaveLength(1)
+})
+it("malformed stored JSON fails closed rather than overwriting", async () => {
+  fs.writeFileSync(stateFile(), "{broken")
+  vi.spyOn(console, "error").mockImplementation(() => {})
+  expect((await post({})).status).toBe(500)
+  expect(fs.readFileSync(stateFile(), "utf8")).toBe("{broken")
+})

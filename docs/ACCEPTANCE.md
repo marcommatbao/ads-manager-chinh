@@ -338,3 +338,42 @@ routing/auth/provider or screen-reader acceptance. No server/provider calls.
 - **Limits / remaining P3:** ACU-3b and part of ACU-3d have local evidence only; do not close full P3. No new acknowledge/ownership/observing/resolved model, revision/409 concurrency, briefing blocked/fallback integration, source-wide account authority, campaign evidence enrichment, hydrated browser/375px/keyboard acceptance, deployed auth/response verification or runtime/provider proof. Existing done/snooze/dismiss behavior remains; it is not verified resolution. Legacy optimization items retain existing evidence limits. Beta/Meta writes, notifications rollout, GTM receipt and broader P3 lifecycle remain deferred. Main owns NEXT/plan/release tracking. No tsc/build, service, dependency, deploy, stage, commit or push performed.
 - Main review: dynamically projected data-quality items are read-only; existing done/snooze/dismiss controls are hidden for them, avoiding unsupported snapshot-only status updates. Legacy item controls are unchanged. Main full regression initially exposed two incomplete UI test fixtures; corrected worker fixtures and final full suite450 PASS/71 skipped. Browser actual SourceEvidence component/CSS fixtures18/18 PASS, no overflow/page errors, keyboard link focus verified, mobile screenshot reviewed. Not hydrated full-page workflow acceptance. Final typecheck/build recorded in NEXT.
 - **Final local evidence:** focused command above — **5 files / 60 tests PASS**; focused ESLint over all 13 changed TypeScript/TSX files — **PASS, no warnings**; `git diff --check` — **PASS**. Vitest prints the existing config-loader compatibility notice. Initial static-panel fixture omitted the required `viewItems` state argument; corrected fixture to consume pure builder output, then all final tests passed. No tsc/build or full-suite claim. Overview health can internally settle partial sub-source failures into cards/notes without throwing; those inner failures are not yet propagated into Inbox items by this slice and remain a follow-up.
+
+## P3 bounded legacy Inbox status revision — 2026-11-26
+
+Implemented on existing GET/POST `/api/inbox`, without a new workflow engine.
+GET includes each item's `revision` (explicit `null` for no saved state; stable
+SHA-256 legacy token for rows without a revision). Reads do not migrate state.
+POST requires `expectedRevision`; malformed/missing tokens return 400, stale
+edits return 409. The existing process-local file mutex encloses current saved
+item lookup, company authorization, evidence eligibility, state read, revision
+check and atomic write. Successful edits receive a server UUID revision and
+server session actor. Reopening retains a `new` row so it cannot immediately
+restore a previously issued null token. Existing 90-day pruning remains.
+
+Read-only quality evidence cannot be marked seen/done/snoozed/dismissed through
+POST, including guessed keys. Missing snapshots/current items return 404;
+unauthorized companies return 403 without writing state. Failed atomic writes
+and malformed stored JSON return failure rather than fabricated success.
+Existing until/reason, money baseline, snooze/money/done resurfacing and
+notification candidate rules remain in use; status edits do not send anything.
+
+The Việc hôm nay UI submits the GET revision (the captured item revision for
+an open dialog). A 409 shows localized reload/review guidance and revalidates;
+there is no automatic mutation retry or optimistic success notification.
+
+Validation: `npx vitest run tests/inbox-status-revision.test.ts tests/inbox-quality-boundary.test.ts tests/inbox-quality.test.ts tests/inbox-quality-ui.test.tsx`
+— **36 tests passed across 4 files**, using actual temporary file stores and
+route handlers with mocked auth/connector metadata; no provider calls or sends.
+Coverage includes same-token parallel winner/conflict, stale after reload and
+reopen, legacy/idempotent reads, different-key preservation, actor spoofing,
+company/auth denial, quality/missing snapshot rejection, malformed status/token,
+normal status and notification eligibility, and atomic-write failure.
+Focused ESLint passed for the changed TS/TSX files; `git diff --check` passed.
+
+Limitations: the mutex is **process-local**, not cross-process/distributed
+locking or SQLite authority. Existing state retention still bounds token
+history. UI conflict handling was inspected in code; no browser interaction
+run was performed. Existing evidence rendering tests passed. No full suite,
+tsc, build, deployment, migration, real-data changes, commit or push performed.
+The existing Vitest/Vite configuration emits its CommonJS/native-loader warning.

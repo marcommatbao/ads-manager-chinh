@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Pill, type PillTone } from "@/components/measure/Pill";
 import { vnd } from "@/components/case/format";
-import { getJson, postJson, ApiError } from "@/components/case/api";
+import { getJson, ApiError } from "@/components/case/api";
 import { useToast } from "@/components/Toast";
 import { SourceEvidence } from "@/components/inbox/SourceEvidence";
 import type { InboxKind, InboxSource } from "@/lib/inbox/build";
@@ -36,6 +36,8 @@ import type { TFunction } from "@/lib/i18n/translate";
 const coText = (id: string) => (id === "MBC" || id === "MBI" ? id : companyLabel(id));
 
 // ── Kiểu dữ liệu trả về từ GET /api/inbox (xem app/api/inbox/route.ts) ──
+class InboxConflictError extends ApiError {}
+
 interface InboxApiResponse {
   success: true;
   builtAt: string | null;
@@ -139,11 +141,19 @@ export default function ViecHomNayPage() {
     setPendingKey(key);
     setActionError((prev) => ({ ...prev, [key]: "" }));
     try {
-      await postJson("/api/inbox", { key, ...body });
+      const response = await fetch("/api/inbox", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, ...body, expectedRevision: (dialog?.item.key === key ? dialog.item : data?.items.find(item => item.key === key))?.revision }),
+      });
+      if (response.status === 409) throw new InboxConflictError();
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new ApiError(result.error ?? t("overview.today.unknownError"));
       await mutate();
       toast({ title: successMsg, variant: "success" });
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : t("overview.today.unknownError");
+      const conflict = e instanceof InboxConflictError;
+      const msg = conflict ? t("overview.today.revisionConflict") : e instanceof ApiError ? e.message : t("overview.today.unknownError");
+      if (conflict) void mutate();
       setActionError((prev) => ({ ...prev, [key]: msg }));
       toast({ title: msg, variant: "error" });
     } finally {

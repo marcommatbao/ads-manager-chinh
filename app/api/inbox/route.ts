@@ -1,10 +1,10 @@
 // GET  /api/inbox — hộp "Việc nên làm hôm nay" (Đợt 15a): ảnh chụp lần dựng gần nhất + trạng thái, lọc theo công ty được phép.
-// POST /api/inbox — { key, status: new|seen|snoozed|done|dismissed, until?, reason? } đổi trạng thái một việc (bỏ qua bắt buộc lý do).
+// POST /api/inbox — { key, status: new|seen|snoozed|done|dismissed, until?, reason?, expectedRevision } đổi trạng thái một việc (bỏ qua bắt buộc lý do).
 // Không ghi gì lên tài khoản quảng cáo.
 import { NextRequest, NextResponse } from "next/server"
 import { actorOf, fail, requireUser } from "@/lib/case/http"
 import { canAccessCompany, hasPermission } from "@/lib/permissions"
-import { readSnapshot, readStates, setItemStatus, validateStatusInput, viewItems } from "@/lib/inbox/store"
+import { InboxStatusError, readSnapshot, readStates, setItemStatus, validateStatusInput, viewItems } from "@/lib/inbox/store"
 import { isTeamsAlertConfigured } from "@/lib/teams-alert"
 import { getT } from "@/lib/i18n/server"
 import { companyIds } from "@/lib/companies"
@@ -52,9 +52,16 @@ export async function POST(request: NextRequest) {
     const t = await getT()
     const input = validateStatusInput(await request.json().catch(() => null), t)
     if (typeof input === "string") return NextResponse.json({ success: false, error: input }, { status: 400 })
-    const item = readSnapshot()?.items.find((i) => i.key === input.key)
-    if (!item) return NextResponse.json({ success: false, error: t("libcase.w.err.itemNotFound") }, { status: 404 })
-    if (!canAccessCompany(u.value, item.company)) return NextResponse.json({ success: false, error: t("libcase.w.err.noCompanyAccess") }, { status: 403 })
-    return NextResponse.json({ success: true, state: setItemStatus(input, actorOf(u.value)) })
-  } catch (e) { return fail(e) }
+    const state = await setItemStatus(input, actorOf(u.value), company => canAccessCompany(u.value, company))
+    return NextResponse.json({ success: true, state })
+  } catch (e) {
+    if (e instanceof InboxStatusError) {
+      const t = await getT()
+      const error = e.code === "revisionConflict" ? t("overview.today.revisionConflict")
+        : e.code === "qualityReadOnly" ? t("overview.today.qualityReadOnly")
+        : e.code === "noCompanyAccess" ? t("libcase.w.err.noCompanyAccess") : t("libcase.w.err.itemNotFound")
+      return NextResponse.json({ success: false, error, code: e.code }, { status: e.status })
+    }
+    return fail(e)
+  }
 }
