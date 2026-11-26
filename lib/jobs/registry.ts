@@ -7,6 +7,8 @@ import type { JobId, JobRiskLevel, JobSchedulingStatus } from "./types";
 
 export interface JobDescriptor {
   id: JobId;
+  /** Explicit admin opt-in for newly registered observation jobs. */
+  defaultEnabled?: boolean;
   displayName: string;
   description: string;
   /** Cron expression (UTC) — real schedule if schedulingStatus is "auto"
@@ -44,6 +46,15 @@ export interface JobDescriptor {
 }
 
 export const JOB_REGISTRY: JobDescriptor[] = [
+  {
+    id: "quality_checkpoint", defaultEnabled: false,
+    displayName: "Quan sát sức khoẻ nguồn — mốc ngày 3/7",
+    description: "Chỉ đánh giá ảnh sức khoẻ Google đã lưu; không gọi nguồn, không gửi thông báo, không đóng việc",
+    cronExpr: "25 * * * *", intervalLabel: "Mỗi giờ (phút 25), chỉ khi đã bật",
+    riskLevel: "low", endpoint: "/api/cron/quality-checkpoint", httpMethod: "GET",
+    requiredEnv: ["CRON_SECRET"], manualTriggerAllowed: true, maxDurationSec: 60,
+    schedulingStatus: "auto",
+  },
   {
     id: "playbook_meta_sync",
     displayName: "Sổ kinh nghiệm — tải số Meta theo khoảng 15 ngày",

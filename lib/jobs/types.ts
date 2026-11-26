@@ -11,6 +11,7 @@
 // runs live inside lib/morning-briefing.ts, CPL/budget checks run inside
 // nba_engine's pipeline — only the standalone cron endpoints were dead.
 export type JobId =
+  | "quality_checkpoint"
   | "google_monitor"
   | "google_budget_optimizer"
   | "quality_score_mbc"

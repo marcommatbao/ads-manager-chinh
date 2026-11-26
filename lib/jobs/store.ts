@@ -57,7 +57,7 @@ export function getJobControl(id: JobId): JobControlRecord {
   const co = companyOfJob(id);
   if (co && !companyIds().includes(co)) return { jobId: id, enabled: false, pausedAt: null, pausedBy: "công ty", pauseReason: `Bản cài này không có công ty ${co}` };
   const file = readControlFile();
-  return file.controls[id] ?? { jobId: id, enabled: true, pausedAt: null, pausedBy: null, pauseReason: null };
+  return file.controls[id] ?? { jobId: id, enabled: JOBS_BY_ID[id]?.defaultEnabled !== false, pausedAt: null, pausedBy: null, pauseReason: null };
 }
 
 /** Đợt 25: job có thuộc bản cài này không (mô-đun bật + công ty có mặt). Trang Cron Jobs / Sức khoẻ ẨN job không thuộc bản cài. */
@@ -68,6 +68,7 @@ export function jobInInstall(id: string): boolean {
 
 export function getAllJobControls(): Partial<Record<JobId, JobControlRecord>> {
   const c = { ...readControlFile().controls };
+  for (const desc of Object.values(JOBS_BY_ID)) if (desc.defaultEnabled === false) c[desc.id] = getJobControl(desc.id);
   for (const [id, mod] of Object.entries(JOB_MODULE)) if (mod && !hasModule(mod)) c[id as JobId] = getJobControl(id as JobId);
   for (const [id, co] of Object.entries(JOB_COMPANY)) if (co && !companyIds().includes(co)) c[id as JobId] = getJobControl(id as JobId);
   for (const id of envDisabledJobs()) c[id as JobId] = envPaused(id as JobId);

@@ -36,7 +36,8 @@ function read(): Data {
         || (a.previousRevision !== undefined && typeof a.previousRevision !== "string") || !a.id || !a.revision || !a.actor || !Number.isFinite(Date.parse(a.actionAt))
         || a.execution !== "externally_recorded_unverified" || !intactReference(a.baseline)
         || a.baseline.company !== a.company || a.baseline.key !== a.key || !Array.isArray(a.observations) || a.observations.length > 30
-        || a.observations.some(o => Object.keys(o).some(k => !["ref", "at", "actor", "result", "reason"].includes(k)) || !intactReference(o.ref) || o.ref.company !== a.company || o.ref.key !== a.key
+        || a.observations.some(o => Object.keys(o).some(k => !["ref", "at", "actor", "result", "reason", "checkpointDay"].includes(k)) || !intactReference(o.ref) || o.ref.company !== a.company || o.ref.key !== a.key
+          || (o.checkpointDay !== undefined && o.checkpointDay !== 3 && o.checkpointDay !== 7)
           || !o.actor || !Number.isFinite(Date.parse(o.at)) || !["listing_observed", "issue_observed", "inconclusive"].includes(o.result)))) throw new Error()
     for (let index = 0; index < data.actions.length; index++) {
       const action = data.actions[index]
@@ -158,4 +159,45 @@ export async function writeQualityAction(company: string, input: WorkflowInput, 
     existing.revision = randomUUID()
     return existing
   })
+}
+
+/** Bounded stored-health sweep. Same authority, assessment and file transaction as manual writes.
+ * No cross-process lease: deployment must use the existing single-process file-store boundary.
+ * A newer source identity permits a retry; the same source/cycle/day is persisted only once.
+ */
+export async function sweepQualityCheckpoints(companies: string[], snapshot: { google_ads?: ConnectorHealthRecord | null }, now = new Date(), limit = 20) {
+  const counts = { examined: 0, observed: 0, inconclusive: 0, skipped: 0, conflicts: 0 }
+  const cap = Math.max(0, Math.min(20, Math.floor(limit) || 0))
+  if (!cap || !Number.isFinite(+now)) return counts
+  // Missing snapshots are no-result: never manufacture checkedAt from sweep time.
+  if (!snapshot.google_ads || snapshot.google_ads.status === "disabled") return counts
+  const briefs = await qualityBriefs([...new Set(companies)], now, snapshot)
+  for (const brief of briefs) {
+    if (!brief.action || Date.parse(brief.action.actionAt) > +now) continue
+    for (const checkpoint of brief.checkpoints ?? []) {
+      if (counts.examined >= cap) return counts
+      if (checkpoint.status === "not_due" || checkpoint.status === "observed") continue
+      counts.examined++
+      const outcome = await change(now, data => {
+        const action = data.actions.filter(a => a.company === brief.company && a.key === brief.key).at(-1)
+        if (!action || action.id !== brief.action!.id || action.revision !== brief.action!.revision) return "conflicts" as const
+        const ref = resolve(data, brief.reference.registryId, brief.company, now)
+        if (ref.health.outcome === "disabled" || action.observations.length >= 30) return "skipped" as const
+        if (action.observations.some(o => o.checkpointDay === checkpoint.day && sourceIdentity(o.ref) === sourceIdentity(ref))) return "skipped" as const
+        const previousReadAt = action.observations.filter(o => o.checkpointDay === undefined || o.checkpointDay === checkpoint.day)
+          .map(o => o.ref.readAt).filter((v): v is string => v !== null).sort().at(-1)
+        const assessment = assessHealth(action.baseline, ref, action.actionAt, now, previousReadAt)
+        if (assessment.result !== "inconclusive" && Date.parse(ref.readAt ?? "") < Date.parse(checkpoint.dueAt)) {
+          assessment.result = "inconclusive"; assessment.reason = "no_new_read"
+        }
+        action.observations.push({ ref, at: now.toISOString(), actor: "job:quality_checkpoint", checkpointDay: checkpoint.day, ...assessment })
+        action.revision = randomUUID()
+        // Carry our own revision forward for day7, while still detecting external writes.
+        brief.action!.revision = action.revision
+        return assessment.result === "inconclusive" ? "inconclusive" as const : "observed" as const
+      })
+      counts[outcome]++
+    }
+  }
+  return counts
 }

@@ -15,6 +15,8 @@ export interface HealthReference {
   evidence: InboxEvidence | null
 }
 export interface HealthObservation {
+  /** Stored-snapshot sweep identity; manual observations omit this. */
+  checkpointDay?: 3 | 7
   ref: HealthReference
   at: string
   actor: string
