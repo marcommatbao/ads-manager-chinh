@@ -7,6 +7,8 @@
 // Chi phí gán theo prefix tên campaign (đã thống nhất).
 // ============================================================
 
+import { MBI_CUSTOMER_SOURCE_IDS } from "@/lib/mbi-order-sources";
+
 import { real, unavailable, type DataTruth } from "@/lib/data-truth";
 
 import { gatherCampaignsWithStatus } from "@/lib/nba/gather";
@@ -32,7 +34,7 @@ const MBC_REVENUE_FILTER = { typeId: [6, 9] };
 const MBI_ORDER_FILTER = {
   typeId:         [11, 4, 5, 2, 3, 1, 9, 6, 10],
   teamId:         [60, 59, 39, 35, 53, 42, 54, 50],
-  customerSource: [17, 29, 16, 27, 243, 30],
+  customerSource: MBI_CUSTOMER_SOURCE_IDS,
 };
 
 /** Kênh chi phí thực tế: Google/Facebook đo qua API, TikTok/Zalo/Kênh khác do

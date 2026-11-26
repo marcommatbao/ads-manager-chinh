@@ -30,7 +30,7 @@ export const MKT_PAYMENT_STATES = ["in_payment", "paid"];
 export const MKT_TEAM_PREFIX = "M-";
 
 /**
- * Sáu nguồn được phòng MKT tính là đơn của marketing.
+ * Bảy nguồn được phòng MKT tính là đơn của marketing.
  *
  * ĐỌC Ở TRƯỜNG `customer_source`, KHÔNG PHẢI `source_id`. Hai trường này khác
  * nhau thật, đo ngày 21/09/2026 trên tháng 9:
@@ -51,6 +51,7 @@ export const MKT_SOURCES = [
   "Kênh chat",
   "Yêu cầu phòng ban",
   "matbao.in",
+  "Chat web - sale.ai.vn",
   "Đơn hàng ID",
 ];
 

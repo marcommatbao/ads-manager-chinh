@@ -10,6 +10,7 @@
 // Returns a month-by-month series for the dashboard revenue chart.
 // ============================================================
 
+import { MBI_CUSTOMER_SOURCE_IDS } from "@/lib/mbi-order-sources";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -28,7 +29,7 @@ const REPORT_API = (process.env.MATBAO_REPORT_API ?? "").trim().replace(/\/+$/, 
 const ORDER_FILTER = {
   typeId:         [11, 4, 5, 2, 3, 1, 9, 6, 10],
   teamId:         [60, 59, 39, 35, 53, 42, 54, 50],
-  customerSource: [17, 29, 16, 27, 243, 30],
+  customerSource: MBI_CUSTOMER_SOURCE_IDS,
 };
 
 // "Doanh số theo tháng" filters

@@ -456,7 +456,7 @@ export function KpiTab() {
   // trong khi cộng các dòng sản phẩm MBI lại chỉ ra 660.768.400đ.
   // Chia cho chi phí QC ra ROAS 267,7x — con số không có thật, và nguy hiểm
   // chính vì quá đẹp để bị nghi ngờ. Số MKT thật: 41.268.450đ → ROAS 0,83x.
-  // CHỈ ÁP CHO MBI. Bốn điều kiện + sáu nguồn là cách ghi nhận của phòng MKT
+  // CHỈ ÁP CHO MBI. Bốn điều kiện + bảy nguồn là cách ghi nhận của phòng MKT
   // cho MBI, không phải luật chung — đội "M-*" và các nguồn như "Đơn hàng MBI
   // online" là của MBI. Áp nhầm sang MBC thì lọc ra 43.064.450đ mà KHÔNG đồng
   // nào khớp được nhóm sản phẩm MBC, tức lọc ra nhầm tập đơn.
@@ -529,7 +529,7 @@ export function KpiTab() {
       {/* ── Summary cards ── */}
       <div className="grid gap-3 grid-cols-3">
         {/* Nhãn nói RÕ đây là doanh thu của marketing, không phải của công ty.
-            Gọi "Tổng doanh thu" trên một con số chỉ tính 6 nguồn MKT là mời
+            Gọi "Tổng doanh thu" trên một con số chỉ tính 7 nguồn MKT là mời
             người đọc hiểu nhầm đúng cái vừa sửa. */}
         <SummaryCard
           label={useMkt ? t("overview.kpitab.mktRevenue") : t("overview.kpitab.totalRevenue")}

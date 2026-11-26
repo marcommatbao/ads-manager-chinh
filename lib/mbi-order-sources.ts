@@ -30,7 +30,7 @@ export const MBI_TEAM_IDS = [60, 59, 39, 35, 53, 42, 54, 50];
 /** utm.source IDs (via sale.order.customer_source) that count as a real
  *  MBI/MKT order — matches lib/finance/company-pnl.ts's
  *  MBI_ORDER_FILTER.customerSource exactly. */
-export const MBI_CUSTOMER_SOURCE_IDS = [17, 29, 16, 27, 243, 30];
+export const MBI_CUSTOMER_SOURCE_IDS = [17, 29, 16, 19, 27, 243, 30];
 
 /** utm.source id → human label (+ emoji) for display in Teams cards, so
  *  recipients can tell at a glance whether an order already has a known
@@ -42,6 +42,7 @@ export const MBI_SOURCE_LABELS: Record<number, string> = {
   17: "💬 Kênh chat",
   29: "🌐 Đơn hàng MBI online",
   16: "☎️ Điện thoại vào công ty",
+  19: "Yêu cầu phòng ban",
   27: "🌐 matbao.in",
   243: "💬 Chat web - sale.ai.vn",
   30: "🆔 Đơn hàng ID",

@@ -2,7 +2,7 @@
 // GET /api/odoo/mkt-revenue?month=2026-09&company=MBI
 //
 // Doanh thu + số đơn do MARKETING mang về, theo đúng cách ghi nhận của phòng
-// MKT (xem lib/odoo-mkt-orders.ts cho bốn điều kiện và sáu nguồn).
+// MKT (xem lib/odoo-mkt-orders.ts cho bốn điều kiện và bảy nguồn).
 // ------------------------------------------------------------
 // THAY CHO ĐÂU: hai ô "TỔNG DOANH THU" / "TỔNG ĐƠN HÀNG" ở tab Chi Phí SP lấy
 // từ /api/odoo/revenue-by-product, vốn chỉ lọc theo ngày hoá đơn — không lọc
@@ -145,7 +145,7 @@ export async function GET(req: NextRequest) {
       basis: {
         sources: MKT_SOURCES,
         note: "Chỉ đơn do marketing mang về: đội M-*, đã thu tiền, không tính đơn đồng bộ, "
-            + "và nguồn nằm trong 6 nguồn của phòng MKT. Tính theo NGÀY ĐẶT HÀNG, giá trị CHƯA THUẾ.",
+            + "và nguồn nằm trong 7 nguồn của phòng MKT. Tính theo NGÀY ĐẶT HÀNG, giá trị CHƯA THUẾ.",
       },
     });
   } catch (err) {

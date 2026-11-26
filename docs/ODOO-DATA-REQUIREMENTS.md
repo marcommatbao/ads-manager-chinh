@@ -79,11 +79,13 @@ MBC order count = data.totalCount
 {
   "typeId": [11, 4, 5, 2, 3, 1, 9, 6, 10],
   "teamId": [60, 59, 39, 35, 53, 42, 54, 50],
-  "customerSource": [17, 29, 16, 27, 243, 30],
+  "customerSource": [17, 29, 16, 19, 27, 243, 30],
   "dateOrderFrom": "YYYY-MM-DD HH:mm:ss",
   "dateOrderTo": "YYYY-MM-DD HH:mm:ss"
 }
 ```
+
+Bảy nguồn MBI: 17 — Kênh chat; 29 — Đơn hàng MBI online; 16 — Điện thoại vào công ty; 19 — Yêu cầu phòng ban; 27 — matbao.in; 243 — Chat web - sale.ai.vn; 30 — Đơn hàng ID. Đọc từ `customer_source`, không phải `source_id`.
 
 ### Response cần lấy
 
