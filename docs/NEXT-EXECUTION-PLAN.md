@@ -375,4 +375,4 @@ Tổng điểm có trọng số bằng nhau = 60%. Ưu tiên kế tiếp: deploy
 - User screenshot confirms customer_source 19 = Yêu cầu phòng ban; user confirms 243 = Chat web - sale.ai.vn also belongs to MBI. Unified union: [17,29,16,19,27,243,30]. Added 19 to shared ID classification/display; added sale.ai.vn to MKT name filter.
 - P&L and monthly Report API now reuse shared source IDs; MKT revenue/name-based report, vi/en wording and data requirements updated to seven sources. Existing team/type/payment/date rules unchanged. Notification-only source remains [29].
 - Main full regression 302 PASS / 71 skipped / 0 failed; focused source/P&L 14 PASS. Worker wrapper failed after leaving edits; main independently reviewed/tested. Core changed-file scoped lint PASS; KpiTab baseline has 3 pre-existing setState-in-effect errors + 1 warning, reproduced against HEAD. No unrelated UI fixes.
-- Typecheck/build verification in progress. No live data write, deployment or claim of changed dashboard totals yet.
+- Typecheck and production build PASS (exit 0); Odoo route lint and GAQL date check PASS. No live data write, deployment or claim of changed dashboard totals yet.
