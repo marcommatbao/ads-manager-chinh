@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckpointVisibility } from "@/components/jobs/checkpoint-visibility";
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, Play, Pause, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Clock, SkipForward, AlertCircle, Search, FileSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -329,9 +330,9 @@ function PauseDialog({ jobId, onConfirm, onCancel }: { jobId: string; onConfirm:
 function JobRow({
   state, meta, canControl,
   onPause, onResume, onTrigger,
-  acting, triggering,
+  acting, triggering, scheduler,
 }: {
-  state: JobState; meta: JobMeta; canControl: boolean;
+  state: JobState; meta: JobMeta; canControl: boolean; scheduler?: JobsResponse["scheduler"];
   onPause: () => void; onResume: () => void; onTrigger: () => void;
   acting: boolean; triggering: boolean;
 }) {
@@ -417,6 +418,8 @@ function JobRow({
         )}
       </div>
 
+      {state.jobId === "quality_checkpoint" && <CheckpointVisibility state={state} scheduler={scheduler} />}
+
       {/* Expanded details */}
       {expanded && (
         <div className="border-t border-slate-100 bg-slate-50/30 px-4 py-3 space-y-3">
@@ -477,7 +480,7 @@ function JobRow({
                   <span className={cn("shrink-0", RUN_STATUS[r.status].cls)}>{RUN_STATUS[r.status].icon}</span>
                   <span className="text-slate-500 w-20 shrink-0">{relTime(r.startedAt, t)}</span>
                   {r.durationMs != null && <span className="text-slate-400 w-12 shrink-0">{(r.durationMs / 1000).toFixed(1)}s</span>}
-                  <span className="text-slate-600 truncate">{r.resultSummary ?? r.errorSummary ?? r.status}</span>
+                  <span className="text-slate-600 truncate">{state.jobId === "quality_checkpoint" ? t(`creative.checkpoint.status.${r.status}`) : r.resultSummary ?? r.errorSummary ?? r.status}</span>
                   <span className="text-slate-400 ml-auto shrink-0 text-[10px]">{r.triggeredBy}</span>
                 </div>
               ))}
@@ -646,6 +649,7 @@ export default function JobsPage() {
           if (!meta) return null;
           return (
             <JobRow
+              scheduler={data.scheduler}
               key={state.jobId}
               state={state}
               meta={meta}
