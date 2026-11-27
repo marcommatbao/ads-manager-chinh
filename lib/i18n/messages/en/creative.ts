@@ -15,6 +15,8 @@ export const creative: Translation<typeof vi> = {
   "creative.briefReview.confirm": "Check content, claims, product constraints, language and destination for this exact revision.",
   "creative.briefReview.check": "I checked this revision and understand this is an internal review.",
   "creative.briefReview.cancel": "Cancel",
+  "creative.briefReview.conflict": "This brief changed or the request conflicts with stored history. Reload the current brief before reviewing again.",
+  "creative.briefReview.reload": "Reload current brief",
   "creative.briefReview.error": "Could not save. Reload the brief to check revision/access and try again.",
 
   "creative.checkpoint.title": "Stored source checkpoint",

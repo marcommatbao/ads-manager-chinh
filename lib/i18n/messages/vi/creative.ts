@@ -13,6 +13,8 @@ export const creative = {
   "creative.briefReview.confirm": "Kiểm tra nội dung, claim, ràng buộc sản phẩm, ngôn ngữ và trang đích của đúng phiên bản này.",
   "creative.briefReview.check": "Tôi đã kiểm tra phiên bản hiển thị và hiểu đây là rà soát nội bộ.",
   "creative.briefReview.cancel": "Hủy",
+  "creative.briefReview.conflict": "Brief đã thay đổi hoặc yêu cầu xung đột với lịch sử đã lưu. Tải lại brief hiện tại trước khi rà soát lại.",
+  "creative.briefReview.reload": "Tải lại brief hiện tại",
   "creative.briefReview.error": "Không thể lưu. Tải lại brief để kiểm tra phiên bản/quyền và thử lại.",
 
   "creative.checkpoint.title": "Mốc kiểm tra nguồn đã lưu",

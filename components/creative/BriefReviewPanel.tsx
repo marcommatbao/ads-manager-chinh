@@ -13,9 +13,22 @@ export function BriefReviewPanel({ draft, canEdit, onChange }: { draft: BriefDra
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState(false);
   const [usp, setUsp] = useState(draft.output?.usp ?? "");
   const [value, setValue] = useState(draft.output?.valueProposition ?? "");
   const dirty = usp !== draft.output?.usp || value !== draft.output?.valueProposition;
+  async function reload() {
+    setBusy(true); setError(null);
+    try {
+      const res = await fetch(`/api/creative/brief/${encodeURIComponent(draft.id)}`);
+      const json = await res.json();
+      if (!res.ok || !json.success || !json.data?.draft) throw new Error();
+      const next = json.data.draft as BriefDraft;
+      setUsp(next.output?.usp ?? ""); setValue(next.output?.valueProposition ?? "");
+      setConflict(false); setChecked(false); setOpen(false); onChange(next);
+    } catch { setError(t("creative.briefReview.error")); }
+    finally { setBusy(false); }
+  }
   async function act(action: "review" | "edit") {
     setBusy(true); setError(null);
     try {
@@ -23,6 +36,10 @@ export function BriefReviewPanel({ draft, canEdit, onChange }: { draft: BriefDra
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, company: draft.input.company, expectedRevision: draft.revision, contentHash: draft.contentHash, usp, valueProposition: value }),
       });
+      if (res.status === 409) {
+        setConflict(true); setOpen(false); setChecked(false);
+        setError(t("creative.briefReview.conflict")); return;
+      }
       const json = await res.json();
       if (!res.ok || !json.success || !json.data?.draft) throw new Error(String(res.status));
       onChange(json.data.draft); setOpen(false); setChecked(false);
@@ -39,11 +56,12 @@ export function BriefReviewPanel({ draft, canEdit, onChange }: { draft: BriefDra
       <label className="block text-xs">{t("creative.briefReview.value")}<Input maxLength={4000} value={value} disabled={busy} onChange={e => setValue(e.target.value)} /></label>
       {dirty && <p className="text-xs" role="status">{t("creative.briefReview.unsaved")}</p>}
       <div className="flex flex-wrap gap-2">
-        <Button disabled={busy || !dirty || !usp.trim() || !value.trim()} onClick={() => void act("edit")}>{t("creative.briefReview.save")}</Button>
-        <Button variant="outline" disabled={busy || dirty || !!draft.review} onClick={() => { setChecked(false); setOpen(true); }}>{t("creative.briefReview.review")}</Button>
+        <Button disabled={conflict || busy || !dirty || !usp.trim() || !value.trim()} onClick={() => void act("edit")}>{t("creative.briefReview.save")}</Button>
+        <Button variant="outline" disabled={conflict || busy || dirty || !!draft.review} onClick={() => { setChecked(false); setOpen(true); }}>{t("creative.briefReview.review")}</Button>
       </div>
     </>}
-    {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
+    {conflict && <Button disabled={busy} variant="outline" onClick={() => void reload()}>{t("creative.briefReview.reload")}</Button>}
+    {error && !open && <p role="alert" className="text-xs text-red-600">{error}</p>}
     <details><summary className="cursor-pointer text-xs">{t("creative.briefReview.history")}</summary>
       {draft.history?.map(r => <details key={r.revision} className="mt-2 border-t pt-2">
         <summary className="cursor-pointer text-xs">{t("creative.briefReview.revision", { n: r.revision })} · {t(r.review ? "creative.briefReview.reviewed" : "creative.briefReview.unreviewed")}</summary>
@@ -59,6 +77,7 @@ export function BriefReviewPanel({ draft, canEdit, onChange }: { draft: BriefDra
       </DialogHeader>
         <p className="break-all text-xs">{t("creative.briefReview.revision", { n: draft.revision ?? 0 })} / {draft.contentHash}</p>
         <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={checked} disabled={busy} onChange={e => setChecked(e.target.checked)} />{t("creative.briefReview.check")}</label>
+        {error && open && <p role="alert" className="text-xs text-red-600">{error}</p>}
         <DialogFooter><Button variant="outline" disabled={busy} onClick={() => setOpen(false)}>{t("creative.briefReview.cancel")}</Button><Button disabled={!checked || busy || dirty} onClick={() => void act("review")}>{t("creative.briefReview.review")}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
