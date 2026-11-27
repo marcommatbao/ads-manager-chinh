@@ -9,6 +9,10 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useSession } from "@/components/SessionProvider";
+import { hasPermission } from "@/lib/permissions";
+import { BriefReviewPanel } from "./BriefReviewPanel";
+import type { BriefDraft } from "@/lib/creative-brief/types";
 import { BriefPreview } from "./BriefPreview";
 import { PRODUCTS_BY_COMPANY } from "@/app/(dashboard)/creative/_constants";
 import type { AudienceSegment } from "@/app/(dashboard)/creative/_types";
@@ -72,7 +76,7 @@ function RadioCard<T extends string>({
   );
 }
 
-function StepIndicator({ step, total }: { step: number; total: number }) {
+function StepIndicator({ step }: { step: number }) {
   const t = useT();
   return (
     <div className="flex items-center gap-2">
@@ -100,11 +104,14 @@ function StepIndicator({ step, total }: { step: number; total: number }) {
 
 interface Props {
   initialCompany?: BriefCompany;
-  onBriefGenerated?: (brief: CreativeBrief) => void;
+  onBriefGenerated?: (brief: CreativeBrief, draft: BriefDraft) => void;
 }
 
 export function BriefBuilder({ initialCompany = "MBC", onBriefGenerated }: Props) {
   const t = useT();
+  const { user } = useSession();
+  const canEdit = !!user && hasPermission(user.role, "can_edit");
+  const [draft, setDraft] = useState<BriefDraft | null>(null);
   const [step, setStep] = useState(1);
 
   // Step 1
@@ -205,13 +212,14 @@ export function BriefBuilder({ initialCompany = "MBC", onBriefGenerated }: Props
       const res  = await fetch("/api/creative/brief", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input }),
+        body: JSON.stringify({ input, ...(draft ? { draftId: draft.id, expectedRevision: draft.revision } : {}) }),
       });
-      const json = await res.json() as { success?: boolean; data?: { brief: CreativeBrief }; error?: string };
+      const json = await res.json() as { success?: boolean; data?: { brief: CreativeBrief; draft: BriefDraft }; error?: string };
       if (json.success && json.data?.brief) {
         setBrief(json.data.brief);
+        setDraft(json.data.draft);
         setStep(4);
-        onBriefGenerated?.(json.data.brief);
+        onBriefGenerated?.(json.data.brief, json.data.draft);
       } else {
         setGenError(json.error ?? t("creative.brief.builder.genUnknownError"));
       }
@@ -228,7 +236,7 @@ export function BriefBuilder({ initialCompany = "MBC", onBriefGenerated }: Props
     <div className="w-full max-w-2xl mx-auto space-y-5">
       {/* Step indicator */}
       <div className="bg-white rounded-xl border border-slate-200 px-4 py-3">
-        <StepIndicator step={step} total={STEPS.length} />
+        <StepIndicator step={step} />
       </div>
 
       {/* ── Step 1: Product ───────────────────────────────── */}
@@ -243,7 +251,7 @@ export function BriefBuilder({ initialCompany = "MBC", onBriefGenerated }: Props
               {companyIds().map(c => (
                 <button
                   key={c}
-                  onClick={() => { setCompany(c); setProduct(""); }}
+                  onClick={() => { setCompany(c); setProduct(""); setDraft(null); }}
                   className={cn(
                     "flex-1 py-2 rounded-lg border text-xs font-bold transition-all",
                     company === c ? "bg-indigo-600 text-white border-indigo-600" : "border-slate-200 text-slate-600 hover:border-slate-300"
@@ -416,7 +424,7 @@ export function BriefBuilder({ initialCompany = "MBC", onBriefGenerated }: Props
 
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setStep(2)} className="gap-1 text-xs"><ChevronLeft className="h-3.5 w-3.5" /> {t("creative.brief.builder.back")}</Button>
-            <Button className="flex-1 gap-2 bg-indigo-600 hover:bg-indigo-700" onClick={generate} disabled={generating}>
+            <Button className="flex-1 gap-2 bg-indigo-600 hover:bg-indigo-700" onClick={generate} disabled={generating || !canEdit}>
               {generating
                 ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("creative.brief.builder.generating")}</>
                 : <><Sparkles className="h-4 w-4" /> {t("creative.brief.builder.generate")}</>}
@@ -440,6 +448,7 @@ export function BriefBuilder({ initialCompany = "MBC", onBriefGenerated }: Props
             </Button>
           </div>
           <BriefPreview brief={brief} />
+          {draft && <BriefReviewPanel key={`${draft.id}:${draft.revision}`} draft={draft} canEdit={canEdit} onChange={next => { setDraft(next); if (next.output) setBrief(next.output); }} />}
         </div>
       )}
     </div>

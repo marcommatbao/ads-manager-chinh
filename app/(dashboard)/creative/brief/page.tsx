@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { resolveCompanyScope } from "@/lib/permissions";
+import { resolveCompanyScope, hasPermission } from "@/lib/permissions";
 import { useRouter } from "next/navigation";
-import { FileText, ArrowLeft, History, X, Trash2, Sparkles, Loader2 } from "lucide-react";
+import { FileText, ArrowLeft, History, X, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { BriefBuilder } from "@/components/creative/BriefBuilder";
+import { BriefReviewPanel } from "@/components/creative/BriefReviewPanel";
 import { BriefPreview } from "@/components/creative/BriefPreview";
 import { BriefStatusBadge } from "@/components/creative/BriefStatusBadge";
 import { useSession } from "@/components/SessionProvider";
-import type { CreativeBrief } from "@/lib/creative-brief/types";
+import type { CreativeBrief, BriefDraft } from "@/lib/creative-brief/types";
 import { buildGenerateRequests } from "@/lib/creative-brief/generate-bridge";
 import type { CreativeResult } from "@/lib/creative-pipeline";
 import { useIntlLocale, useT } from "@/lib/i18n/client";
@@ -28,48 +29,33 @@ const OBJECTIVE_KEY_MAP: Record<CreativeBrief["objective"], string> = {
 
 // ── Draft History Panel ───────────────────────────────────────
 
-interface DraftSummary {
-  id: string;
-  name: string;
-  updatedAt: string;
-  input:  { company: string; product: string };
-  output?: CreativeBrief;
-}
+type DraftSummary = BriefDraft;
 
 function DraftHistoryPanel({
   onSelect,
   onClose,
 }: {
-  onSelect: (brief: CreativeBrief) => void;
+  onSelect: (draft: BriefDraft) => void;
   onClose: () => void;
 }) {
   const t = useT();
   const loc = useIntlLocale();
   const [drafts, setDrafts]   = useState<DraftSummary[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
 
-  const load = async () => {
-    if (drafts) return;
-    setLoading(true);
-    try {
-      const res  = await fetch("/api/creative/brief?limit=20");
-      const json = await res.json() as { success?: boolean; data?: { drafts: DraftSummary[] } };
-      setDrafts(json.data?.drafts ?? []);
-    } catch {
-      setError(t("creative.briefPage.historyLoadFailed"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const deleteDraft = async (id: string) => {
-    await fetch(`/api/creative/brief/${id}`, { method: "DELETE" });
-    setDrafts(prev => prev?.filter(d => d.id !== id) ?? null);
-  };
-
-  // Load on mount
-  useEffect(() => { void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    let active = true;
+    fetch("/api/creative/brief?limit=20")
+      .then(async res => {
+        const json = await res.json() as { success?: boolean; data?: { drafts: DraftSummary[] } };
+        if (!res.ok || !json.success) throw new Error("Brief history unavailable");
+        if (active) setDrafts(json.data?.drafts ?? []);
+      })
+      .catch(() => { if (active) setError(t("creative.briefPage.historyLoadFailed")); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [t]);
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -94,7 +80,7 @@ function DraftHistoryPanel({
               <div className="flex items-start justify-between gap-2">
                 <button
                   className="flex-1 text-left min-w-0"
-                  onClick={() => d.output && onSelect(d.output)}
+                  onClick={() => d.output && onSelect(d)}
                   disabled={!d.output}
                 >
                   <p className="text-xs font-semibold text-slate-800 truncate">{d.name}</p>
@@ -104,12 +90,7 @@ function DraftHistoryPanel({
                   {d.output && <BriefStatusBadge brief={d.output} className="mt-1.5" />}
                   {!d.output && <span className="text-[10px] text-slate-300">{t("creative.briefPage.notGenerated")}</span>}
                 </button>
-                <button
-                  onClick={() => void deleteDraft(d.id)}
-                  className="p-1 rounded hover:bg-red-50 text-slate-300 hover:text-red-400 shrink-0"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+
               </div>
             </div>
           ))}
@@ -130,6 +111,7 @@ export default function CreativeBriefPage() {
   // "ALL" đi như một mã công ty. Mở phạm vi ra rồi lấy cái đầu.
   const company = resolveCompanyScope(session?.user?.companies, session?.user?.role)[0] ?? "MBC";
 
+  const [viewingDraft, setViewingDraft] = useState<BriefDraft | null>(null);
   const [viewingBrief, setViewingBrief] = useState<CreativeBrief | null>(null);
   const [showHistory,  setShowHistory]  = useState(false);
   const [generating,   setGenerating]   = useState(false);
@@ -250,11 +232,13 @@ export default function CreativeBriefPage() {
               </div>
             )}
             <BriefPreview brief={viewingBrief} />
+            {viewingDraft && <BriefReviewPanel key={`${viewingDraft.id}:${viewingDraft.revision}`} draft={viewingDraft} canEdit={!!session.user && hasPermission(session.user.role, "can_edit")} onChange={next => { setViewingDraft(next); if (next.output) setViewingBrief(next.output); }} />}
           </div>
         ) : (
           <BriefBuilder
             initialCompany={company}
-            onBriefGenerated={brief => {
+            onBriefGenerated={(brief, draft) => {
+              setViewingDraft(draft);
               setViewingBrief(brief);
             }}
           />
@@ -264,7 +248,7 @@ export default function CreativeBriefPage() {
       {/* History drawer */}
       {showHistory && (
         <DraftHistoryPanel
-          onSelect={brief => { setViewingBrief(brief); setShowHistory(false); }}
+          onSelect={draft => { setViewingDraft(draft); setViewingBrief(draft.output ?? null); setShowHistory(false); }}
           onClose={() => setShowHistory(false)}
         />
       )}

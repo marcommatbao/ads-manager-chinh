@@ -2,6 +2,21 @@ import type { Translation } from "../../types"
 import type { creative as vi } from "../vi/creative"
 
 export const creative: Translation<typeof vi> = {
+  "creative.briefReview.revision": "Revision {n}",
+  "creative.briefReview.reviewed": "Content reviewed",
+  "creative.briefReview.unreviewed": "Unreviewed",
+  "creative.briefReview.caveat": "Internal revision review; does not confirm platform ad approval.",
+  "creative.briefReview.usp": "USP",
+  "creative.briefReview.value": "Value proposition",
+  "creative.briefReview.save": "Save new revision",
+  "creative.briefReview.review": "Record content review",
+  "creative.briefReview.unsaved": "Unsaved content. Save a new revision and review again.",
+  "creative.briefReview.history": "Revision history",
+  "creative.briefReview.confirm": "Check content, claims, product constraints, language and destination for this exact revision.",
+  "creative.briefReview.check": "I checked this revision and understand this is an internal review.",
+  "creative.briefReview.cancel": "Cancel",
+  "creative.briefReview.error": "Could not save. Reload the brief to check revision/access and try again.",
+
   "creative.checkpoint.title": "Stored source checkpoint",
   "creative.checkpoint.schedule": "Schedule",
   "creative.checkpoint.heartbeat": "Scheduler heartbeat (separate)",
@@ -13,6 +28,11 @@ export const creative: Translation<typeof vi> = {
   "creative.checkpoint.status.disabled": "Disabled",
   "creative.checkpoint.status.never_run": "Never run",
   "creative.checkpoint.status.unknown": "Unknown",
+  "creative.checkpoint.status.abandoned": "Acknowledged expired — outcome unknown",
+  "creative.checkpoint.recovery.recover": "Acknowledge expired run",
+  "creative.checkpoint.recovery.confirm": "This records an unknown outcome only. It does not stop work, unlock execution, retry, or enable the job. Inspect the run before confirming.",
+  "creative.checkpoint.recovery.error": "Acknowledgement refused or unavailable. Refresh and inspect history.",
+  "creative.checkpoint.recovery.done": "Acknowledged. Refresh Jobs to inspect updated history.",
   "creative.checkpoint.status.running": "Running",
   "creative.checkpoint.status.suspected_stale": "Suspected stale",
   "creative.checkpoint.status.success": "Last run succeeded",

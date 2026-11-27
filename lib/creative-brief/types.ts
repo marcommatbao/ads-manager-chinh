@@ -169,10 +169,31 @@ export interface CreativeBrief {
 
 // Store draft shape
 export interface BriefDraft {
+  revision?: number;
+  contentHash?: string;
+  review?: BriefReview;
+  history?: BriefRevision[];
   id:          string;
   name:        string;
   input:       BriefInput;
   output?:     CreativeBrief;
   createdAt:   string;
   updatedAt:   string;
+}
+
+/** Human acknowledgement of this exact content, never platform ad approval. */
+export interface BriefReview {
+  revision: number;
+  contentHash: string;
+  actorId: string;
+  reviewedAt: string;
+}
+export interface BriefRevision {
+  revision: number;
+  contentHash: string;
+  name: string;
+  input: BriefInput;
+  output?: CreativeBrief;
+  savedAt: string;
+  review?: BriefReview;
 }
