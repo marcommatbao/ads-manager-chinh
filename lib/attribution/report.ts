@@ -1,6 +1,6 @@
 import type { Company } from "@/lib/case/types";
 import { readLeadEvents } from "@/lib/leads/quality";
-import { readOrders } from "@/lib/orders/sources";
+import { readOrdersTruth, type OrdersTruthMetadata } from "@/lib/orders/sources";
 import { leadEventEvidence, matchLeadsToOrders, realOrderEvidence, type AttributionReport } from "@/lib/attribution/matcher";
 
 /**
@@ -11,11 +11,13 @@ export async function readAttributionReport(
   company: Company,
   since: Date,
   until = new Date(),
-): Promise<AttributionReport> {
-  const [orders, storedLeads] = await Promise.all([
-    readOrders(company, since, until),
+): Promise<Omit<AttributionReport, "duplicateOrders"> & { duplicateOrders: number | null; source: OrdersTruthMetadata & { status: "available" | "unavailable"; reason: string | null } }> {
+  const [truth, storedLeads] = await Promise.all([
+    readOrdersTruth(company, since, until),
     Promise.resolve(readLeadEvents(company)),
   ]);
+  const { orders, ...source } = truth;
+  if (orders === null) return { source, matched: [], unmatched: [], duplicateOrders: null, matchedOrderRate: null, matchedRevenueRate: null };
   const from = since.getTime();
   const to = until.getTime();
   const leads = storedLeads
@@ -25,5 +27,5 @@ export async function readAttributionReport(
       return Number.isFinite(time) && time >= from && time <= to;
     })
     .map((event) => leadEventEvidence(event));
-  return matchLeadsToOrders(leads, orders.map(realOrderEvidence));
+  return { ...matchLeadsToOrders(leads, orders.map(realOrderEvidence)), source };
 }

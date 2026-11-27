@@ -192,6 +192,69 @@ export async function readOrders(co: Company, since: Date, until = new Date()): 
   return readStoredOrders(co).filter((o) => o.source === s.source && o.time >= since.toISOString() && o.time <= until.toISOString())
 }
 
+/** Strict opt-in contract. Legacy readers intentionally retain their existing behavior.
+ * Completeness means the selected local store was read in full, not upstream delivery
+ * or campaign/account attribution. readAt is an observation, never persisted freshness.
+ */
+export interface OrdersTruthMetadata {
+  company: Company; source: OrderSourceId | null; from: string; to: string;
+  readAt: string | null; complete: boolean;
+  scope: "selected_local_store";
+}
+export type OrdersTruth = OrdersTruthMetadata & (
+  | { status: "available"; complete: true; reason: null; orders: RealOrder[] }
+  | { status: "unavailable"; complete: false; reason: "not_configured" | "invalid_config" | "unsupported_source" | "completeness_unverified" | "store_unreadable" | "store_invalid" | "range_not_retained"; orders: null }
+)
+
+export async function readOrdersTruth(co: Company, since: Date, until = new Date()): Promise<OrdersTruth> {
+  const meta: OrdersTruthMetadata = { company: co, source: null, from: since.toISOString(), to: until.toISOString(), readAt: null, complete: false, scope: "selected_local_store" }
+  const unavailable = (reason: Extract<OrdersTruth, { status: "unavailable" }>["reason"]): OrdersTruth =>
+    ({ ...meta, status: "unavailable", complete: false, reason, orders: null })
+  let config: unknown
+  try { config = JSON.parse(fs.readFileSync(CFG, "utf-8")) }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") return unavailable("invalid_config")
+    config = {}
+  }
+  if (!config || typeof config !== "object" || Array.isArray(config)) return unavailable("invalid_config")
+  const selected = (config as AllCfg)[co]
+  if (selected !== undefined && (!selected || !ORDER_SOURCES.some((s) => s.id === selected.source))) return unavailable("invalid_config")
+  meta.source = selected?.source ?? (unsupportedReason(co) ? null : "odoo")
+  if (!meta.source) return unavailable("not_configured")
+  if (meta.source === "odoo") {
+    if (unsupportedReason(co)) return unavailable("unsupported_source")
+    // Existing Odoo adapter has a 5000-row cap before normalization and exposes
+    // no truncation proof. Do not certify a complete read or trigger a new call.
+    return unavailable("completeness_unverified")
+  }
+  let rows: unknown
+  try {
+    const raw = fs.readFileSync(store(co), "utf-8")
+    meta.readAt = new Date().toISOString()
+    rows = JSON.parse(raw)
+  } catch (error) {
+    return unavailable(error instanceof SyntaxError ? "store_invalid" : "store_unreadable")
+  }
+  const valid = (o: unknown): o is RealOrder => {
+    if (!o || typeof o !== "object") return false
+    const r = o as RealOrder
+    return (typeof r.orderId === "string" && !!r.orderId.trim() || typeof r.orderId === "number" && Number.isFinite(r.orderId))
+      && typeof r.time === "string" && Number.isFinite(Date.parse(r.time))
+      && Number.isFinite(r.value) && r.value > 0
+      && (r.source === "webhook" || r.source === "csv")
+      && (r.currency === undefined || typeof r.currency === "string" && /^[A-Z]{3}$/.test(r.currency))
+      && [r.key, r.gclid, r.gbraid, r.wbraid, r.productGroup].every((v) => v === undefined || typeof v === "string")
+      && (r.utm === undefined || !!r.utm && typeof r.utm === "object" && !Array.isArray(r.utm)
+        && Object.values(r.utm).every((v) => v === undefined || typeof v === "string"))
+  }
+  if (!Array.isArray(rows) || !rows.every(valid)) return unavailable("store_invalid")
+  // Retention/count pruning has no watermark. At the cap or outside retention,
+  // even a successful file read cannot certify the requested interval.
+  if (rows.length >= KEEP || since.getTime() < Date.now() - KEEP_DAYS * 864e5) return unavailable("range_not_retained")
+  const orders = rows.filter((o) => o.source === meta.source && Date.parse(o.time) >= since.getTime() && Date.parse(o.time) <= until.getTime())
+  return { ...meta, status: "available", complete: true, reason: null, orders }
+}
+
 /** 10 đơn gần nhất cho trang Nguồn đơn — KHÔNG có email/SĐT (chỉ cờ "có / không"). */
 export function maskRecent(rows: RealOrder[], n = 10) {
   return [...rows].sort((a, b) => (a.time < b.time ? 1 : -1)).slice(0, n).map((r) => ({

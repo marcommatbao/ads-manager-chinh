@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: "Access denied for this company" }, { status: 403 });
   }
   const company = requested === "ALL" && allowed.length === 1 ? allowed[0] : requested;
+  if (company === "ALL") return NextResponse.json({ success: false, error: "Select one company" }, { status: 400 });
   const now = new Date();
   const from = request.nextUrl.searchParams.get("from") ?? new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
   const to = request.nextUrl.searchParams.get("to") ?? now.toISOString().slice(0, 10);
@@ -34,6 +35,7 @@ export async function GET(request: NextRequest) {
     limitations: [
       "Chỉ gán doanh thu khi có click ID, UTM campaign hoặc campaign label khớp duy nhất.",
       "Email/SĐT chỉ dùng cho identity matching ở pipeline khác, không tự gán nguồn quảng cáo tại đây.",
+      "Đối soát lead/đơn không xác lập provider/account/campaign; source.readAt là lúc đọc kho, không chứng minh dữ liệu upstream mới hoặc đầy đủ.",
       "Order không có bằng chứng hoặc evidence mơ hồ được trả về unmatched.",
     ],
   });

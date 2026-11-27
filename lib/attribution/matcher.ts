@@ -7,7 +7,7 @@
 // ============================================================
 
 export type AttributionMatchMethod = "click_id" | "utm_campaign" | "campaign_label";
-export type UnmatchedReason = "no_ad_evidence" | "ambiguous_evidence" | "duplicate_order";
+export type UnmatchedReason = "no_ad_evidence" | "ambiguous_evidence" | "duplicate_order" | "duplicate_conflict";
 
 export interface LeadAttributionEvidence {
   leadId: string;
@@ -38,7 +38,7 @@ export interface MatchedAttribution {
 export interface UnmatchedAttribution {
   orderId: string | number;
   orderKey: string;
-  value: number;
+  value: number | null;
   reason: UnmatchedReason;
 }
 
@@ -46,8 +46,8 @@ export interface AttributionReport {
   matched: MatchedAttribution[];
   unmatched: UnmatchedAttribution[];
   duplicateOrders: number;
-  matchedOrderRate: number;
-  matchedRevenueRate: number;
+  matchedOrderRate: number | null;
+  matchedRevenueRate: number | null;
 }
 
 export function leadEventEvidence(event: { leadId: string; gclid?: string; gbraid?: string; wbraid?: string; utmCampaign?: string; campaignLabel?: string }): LeadAttributionEvidence {
@@ -107,6 +107,11 @@ export function matchLeadsToOrders(
   const seenOrders = new Set<string>();
   let duplicateOrders = 0;
 
+  const fingerprint = (o: OrderAttributionEvidence) => JSON.stringify([o.value, o.currency ?? "VND", keys(o.clickIds).sort(), clean(o.utmCampaign), clean(o.campaignLabel)]);
+  const groups = new Map<string, OrderAttributionEvidence[]>();
+  for (const o of orders) groups.set(orderKey(o), [...(groups.get(orderKey(o)) ?? []), o]);
+  const conflicts = new Set([...groups].filter(([, rows]) => new Set(rows.map(fingerprint)).size > 1).map(([key]) => key));
+
   for (const order of orders) {
     const key = orderKey(order);
     if (seenOrders.has(key)) {
@@ -115,6 +120,11 @@ export function matchLeadsToOrders(
       continue;
     }
     seenOrders.add(key);
+
+    if (conflicts.has(key)) {
+      unmatched.push({ orderId: order.orderId, orderKey: key, value: null, reason: "duplicate_conflict" });
+      continue;
+    }
 
     const candidates: Array<{ method: AttributionMatchMethod; rows: LeadAttributionEvidence[] }> = [
       { method: "click_id", rows: findByClickIds(order, leads) },
@@ -143,13 +153,14 @@ export function matchLeadsToOrders(
   }
 
   const uniqueOrders = matched.length + unmatched.filter((row) => row.reason !== "duplicate_order").length;
-  const totalRevenue = [...matched, ...unmatched].reduce((sum, row) => sum + row.value, 0);
+  const totalRevenue = [...matched, ...unmatched.filter((row) => row.reason !== "duplicate_order")].reduce((sum, row) => sum + (row.value ?? 0), 0);
   const matchedRevenue = matched.reduce((sum, row) => sum + row.value, 0);
+  const currencies = new Set(orders.map((order) => order.currency ?? "VND"));
   return {
     matched,
     unmatched,
     duplicateOrders,
-    matchedOrderRate: uniqueOrders > 0 ? matched.length / uniqueOrders : 0,
-    matchedRevenueRate: totalRevenue > 0 ? matchedRevenue / totalRevenue : 0,
+    matchedOrderRate: conflicts.size ? null : uniqueOrders > 0 ? matched.length / uniqueOrders : null,
+    matchedRevenueRate: conflicts.size || currencies.size > 1 ? null : totalRevenue > 0 ? matchedRevenue / totalRevenue : null,
   };
 }

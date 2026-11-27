@@ -54,3 +54,33 @@ describe("phase 5 lead to order matcher", () => {
     expect(report.unmatched.map((row) => row.reason)).toEqual(["ambiguous_evidence", "duplicate_order"]);
   });
 });
+
+describe("unique revenue denominator", () => {
+  const leads = [{ leadId: "l", clickIds: ["a"] }];
+  const order = { orderId: "o", key: "k", value: 100, clickIds: ["a"] };
+  it("counts identical duplicates once in both denominators", () => {
+    const result = matchLeadsToOrders(leads, [order, { ...order }, { orderId: "other", value: 100 }]);
+    expect(result.matchedOrderRate).toBe(0.5);
+    expect(result.matchedRevenueRate).toBe(0.5);
+    expect(result.duplicateOrders).toBe(1);
+  });
+  it.each([{ value: 200 }, { clickIds: ["b"] }, { currency: "USD" }])("rejects conflicting duplicate evidence regardless of order: %j", (change) => {
+    for (const rows of [[order, { ...order, ...change }], [{ ...order, ...change }, order]]) {
+      const result = matchLeadsToOrders(leads, rows);
+      expect(result.matched).toEqual([]);
+      expect(result.matchedRevenueRate).toBeNull();
+      expect(result.matchedOrderRate).toBeNull();
+      expect(result.unmatched[0]).toMatchObject({ reason: "duplicate_conflict", value: null });
+    }
+  });
+  it("has unknown coverage with no eligible orders", () => {
+    expect(matchLeadsToOrders([], [])).toMatchObject({ matchedOrderRate: null, matchedRevenueRate: null });
+  });
+});
+
+it("does not add revenue across currencies for coverage", () => {
+  expect(matchLeadsToOrders([{ leadId: "l", clickIds: ["a"] }], [
+    { orderId: 1, value: 100, currency: "VND", clickIds: ["a"] },
+    { orderId: 2, value: 100, currency: "USD" },
+  ]).matchedRevenueRate).toBeNull();
+});

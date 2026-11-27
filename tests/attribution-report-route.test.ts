@@ -30,6 +30,7 @@ describe("GET /api/attribution/report", () => {
     getCurrentUser.mockResolvedValue({ id: "u1" });
     const response = await GET(request("company=MBI&from=2026-11-01&to=2026-11-18"));
     expect(response.status).toBe(403);
+    expect(readAttributionReport).not.toHaveBeenCalled();
   });
 
   it("returns normalized report for an allowed company and date range", async () => {
@@ -39,4 +40,12 @@ describe("GET /api/attribution/report", () => {
     expect(readAttributionReport).toHaveBeenCalledWith("MBC", new Date("2026-11-01T00:00:00.000Z"), new Date("2026-11-18T23:59:59.999Z"));
     await expect(response.json()).resolves.toMatchObject({ success: true, attributionLevel: "evidence_bounded" });
   });
+});
+
+it("passes source unavailability without fabricating coverage", async () => {
+  getCurrentUser.mockResolvedValue({ id: "u1" });
+  getCompaniesForRole.mockReturnValue(["MBC"]);
+  readAttributionReport.mockResolvedValue({ source: { company: "MBC", status: "unavailable", reason: "store_invalid", readAt: null }, matchedOrderRate: null, matchedRevenueRate: null, duplicateOrders: null, matched: [], unmatched: [] });
+  const response = await GET(request());
+  expect(await response.json()).toMatchObject({ report: { source: { status: "unavailable" }, matchedRevenueRate: null, duplicateOrders: null } });
 });
