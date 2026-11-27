@@ -34,7 +34,6 @@ export const HIDDEN_PAGES: HiddenPage[] = [
   // ĐỔI HÀNH VI: ẩn qua đây thì middleware chặn luôn URL gõ thẳng. Trước đó
   // gõ URL vẫn vào được. Muốn mở lại bất kỳ trang nào: xoá đúng một dòng.
   { href: "/toolkit/ngram",              label: "N-Gram Finder" },
-  { href: "/toolkit/budget-pacing",      label: "Budget Pacing" },
   { href: "/toolkit/ad-group-structure", label: "Cấu trúc nhóm QC" },
   { href: "/automation/audience",        label: "Audience Suggestions" },
 ];

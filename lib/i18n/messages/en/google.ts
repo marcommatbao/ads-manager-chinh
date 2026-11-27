@@ -2,6 +2,22 @@ import type { Translation } from "../../types"
 import type { google as vi } from "../vi/google"
 
 export const google: Translation<typeof vi> = {
+  "google.budgetPacing.p6.actual": "Actual month-to-date spend",
+  "google.budgetPacing.p6.partialToday": "Today is partial",
+  "google.budgetPacing.p6.runrate": "Completed-day run-rate range",
+  "google.budgetPacing.p6.disclaimer": "Reference = current daily budget × calendar days in month; this is not a billing cap, balance or Google spending limit. Spend is grouped by current campaign budget assignment, including paused/removed campaigns.",
+  "google.budgetPacing.p6.shared": "Shared budget",
+  "google.budgetPacing.p6.single": "Campaign budget",
+  "google.budgetPacing.p6.completed": "Actual through yesterday",
+  "google.budgetPacing.p6.daily": "Current daily budget",
+  "google.budgetPacing.p6.reference": "Monthly reference at current daily rate",
+  "google.budgetPacing.p6.forecast": "Month-end forecast (includes today)",
+  "google.budgetPacing.p6.ready": "Forecast from observed days; missing dates are not zero",
+  "google.budgetPacing.p6.partial_coverage": "Forecast blocked: historical shared-budget assignment is unverified",
+  "google.budgetPacing.p6.insufficient_days": "Insufficient observed days for forecast",
+  "google.budgetPacing.p6.sample": "{n}/{min} minimum observed days",
+  "google.budgetPacing.p6.subtitle": "Actual and forecast spend per budget, using the account currency and time zone.",
+
 
 // app/(dashboard)/google-search/page.tsx
   "google.searchPage.tab.xray": "🩻 X-ray & recommended actions",

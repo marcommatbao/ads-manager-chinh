@@ -1,5 +1,16 @@
 # Gate 3 Test Log
 
+## 2026-11-27 — P6 production artifact acceptance
+
+- Final production build PASS with `NODE_OPTIONS=--max-old-space-size=3072 npm run build`, including Next's TypeScript validation. The initial 1,536 MB heap attempt failed from JavaScript heap exhaustion during TypeScript; validation was not bypassed.
+- Focused P6 and existing forecast tests: 5 files / 56 tests PASS. Scoped ESLint, GAQL date check and `git diff --check` PASS.
+- Browser testing found Budget Pacing still present in `HIDDEN_PAGES`, causing authenticated navigation to redirect home. Removed only that entry and added `tests/budget-pacing-navigation.test.ts`; rebuilt and tested the updated artifact.
+- Chromium on the isolated standalone production artifact PASS: real login redirect and real unauthenticated pacing API 401; authenticated hydrated UI in en/vi at desktop 1440px and mobile 390px; ready/blocked/insufficient states; one-micro display; refresh; intentional HTTP 502 and recovery; no horizontal overflow or unexpected console/page errors.
+- Browser boundary: session/member validation and SSR are real against TEST-only local data; pacing responses and unrelated shell APIs are deterministic browser fixtures. This is not live Google Ads acceptance. Intentional HTTP 502 scenarios produced expected resource console messages.
+- Report and screenshots: `/tmp/ads-pacing-browser-20261127/` in the verification workspace. Temporary server uses a 15-minute watchdog and is stopped after verification. Real repo data and env files were not copied into the fixture runtime.
+- Runtime production dependency audit: 0 high / 0 critical, 14 moderate. This is not a full security gate.
+- Remote deployment remains a separate step; no remote success is inferred from this local evidence.
+
 Date: 2026-11-18
 
 ## Automated checks

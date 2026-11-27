@@ -131,6 +131,8 @@ Set `CRON_SECRET` in Vercel Environment Variables to match `.env.local`.
 
 ## Deployment
 
+The canonical shared app and source/deployment procedure are documented in [docs/DEPLOY.md](docs/DEPLOY.md). Reuse that existing app; the preview commands below are not authorization to create a second beta.
+
 Preview/staging uses Docker Compose with a named data volume. Set `APP_HOST` and `CODER_USER` in `.env` before starting the stack; preview containers use `mb.env=preview`, `mb.autostop=4`, and `restart: "no"`.
 
 ```bash

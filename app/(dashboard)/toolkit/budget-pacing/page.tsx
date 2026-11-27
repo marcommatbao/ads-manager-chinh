@@ -1,173 +1,64 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { resolveCompanyScope } from "@/lib/permissions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, AlertCircle, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { TrendingUp, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/components/SessionProvider";
 import { useT } from "@/lib/i18n/client";
-import type { MessageKey } from "@/lib/i18n/messages";
 
-interface ForecastQuality {
-  confidence: "high" | "medium" | "low" | "insufficient";
-  minDaysRequired: number;
-  observedDays: number;
-  source: string;
-  from: string;
-  to: string;
+import { useIntlLocale } from "@/lib/i18n/client";
+
+export interface BudgetPacing {
+  id: string; name: string; scope: string; currency: string; timeZone: string;
+  members: { id: string; name: string; status: string }[];
+  spent: number; completedSpend: number; dailyBudget: number; monthlyReference: number;
+  projectedSpend: number | null; forecastAllowed: boolean;
+  status: "ready" | "partial_coverage" | "insufficient_days";
+  forecastQuality: { observedDays: number; minDaysRequired: number };
+}
+export interface ApiResponse {
+  success: boolean; company: string; accountId: string; currency: string; timeZone: string;
+  budgets: BudgetPacing[]; dayOfMonth: number; daysInMonth: number; elapsedPct: number;
   readAt: string;
-  reason: string;
-}
-
-interface CampaignPacing {
-  id: string;
-  name: string;
-  spent: number;
-  budget: number;
-  dailyBudget: number;
-  expectedPct: number;
-  actualPct: number;
-  clicks: number;
-  conversions: number;
-  recentDailyAvg: number | null;
-  projectedSpend: number | null;
-  projectedPct: number | null;
-  forecastQuality: ForecastQuality;
-  forecastAllowed: boolean;
-  willExceedBudget: boolean;
-  daysUntilCapped: number | null;
-}
-
-interface ApiResponse {
-  success: boolean;
-  company: string;
-  campaigns: CampaignPacing[];
-  elapsedPct: number;
-  dayOfMonth: number;
-  daysInMonth: number;
+  sourceRanges: { actual: { from: string; to: string }; runrate: { from: string; to: string } };
   error?: string;
 }
 
-function formatVND(v: number) {
-  if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(1)}B₫`;
-  if (v >= 1_000_000)     return `${(v / 1_000_000).toFixed(0)}M₫`;
-  if (v >= 1_000)         return `${(v / 1_000).toFixed(0)}K₫`;
-  return `${v}₫`;
-}
-
-function paceStatus(actualPct: number, expectedPct: number): { label: MessageKey; color: string; bar: string } {
-  const diff = actualPct - expectedPct;
-  if (diff > 10)  return { label: "google.budgetPacing.statusOver", color: "text-red-600", bar: "bg-red-400" };
-  if (diff < -15) return { label: "google.budgetPacing.statusSlow", color: "text-amber-600", bar: "bg-amber-400" };
-  return { label: "google.budgetPacing.statusOnTrack", color: "text-emerald-600", bar: "bg-emerald-400" };
-}
-
-function CampaignRow({ c }: { c: CampaignPacing }) {
+export function CompanyCard({ data, color }: { data: ApiResponse | null; color: string }) {
   const t = useT();
-  const status = paceStatus(c.actualPct, c.expectedPct);
-  return (
-    <div className="space-y-1.5 py-2.5 border-b border-slate-50 last:border-0">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-slate-700 truncate" title={c.name}>{c.name}</span>
-        <span className={cn("shrink-0 text-[11px] font-semibold", status.color)}>{t(status.label)}</span>
-      </div>
-      <div className="relative h-2 w-full rounded-full bg-slate-100">
-        <div className={cn("h-2 rounded-full transition-all", status.bar)} style={{ width: `${Math.min(100, c.actualPct)}%` }} />
-        <div className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 bg-slate-400 rounded" style={{ left: `${Math.min(100, c.expectedPct)}%` }} title={t("google.budgetPacing.expectedTitle", { pct: c.expectedPct })} />
-      </div>
-      <div className="flex items-center justify-between text-[10px] text-slate-400">
-        <span>{formatVND(c.spent)} / {formatVND(c.budget)}</span>
-        <span>
-          {c.actualPct}% <span className="text-slate-300">{t("google.budgetPacing.vsExpected", { pct: c.expectedPct })}</span>
-          {c.conversions > 0 && <span className="ml-1.5 text-emerald-500">{t("google.budgetPacing.conv", { n: Math.round(c.conversions) })}</span>}
-        </span>
-      </div>
-      {c.forecastAllowed && c.willExceedBudget && c.projectedSpend !== null && c.projectedPct !== null && (
-        <div className="flex items-center gap-1 rounded-md bg-red-50 px-1.5 py-1 text-[10px] text-red-600">
-          <AlertCircle className="h-3 w-3 shrink-0" />
-          <span>
-            {t("google.budgetPacing.forecastPre")} <b>{formatVND(c.projectedSpend)}</b> {t("google.budgetPacing.forecastPost", { pct: c.projectedPct })}
-            {c.daysUntilCapped !== null && c.daysUntilCapped > 0 && t("google.budgetPacing.cappedIn", { days: c.daysUntilCapped })}
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function CompanyCard({ data, color }: { data: ApiResponse | null; color: string }) {
-  const t = useT();
+  const locale = useIntlLocale();
   if (!data) return null;
-  const { campaigns, company } = data;
-  if (campaigns.length === 0) {
-    return (
-      <Card className="border border-slate-200 bg-white shadow-sm rounded-xl flex-1">
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <span className={cn("h-3 w-3 rounded-full shrink-0", color)} />
-            <CardTitle className="text-base font-semibold text-slate-800">{company}</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-slate-400 text-center py-6">{t("google.budgetPacing.noCampaigns")}</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const totalSpent  = campaigns.reduce((s, c) => s + c.spent, 0);
-  const totalBudget = campaigns.reduce((s, c) => s + c.budget, 0);
-  const overPace    = campaigns.filter(c => c.actualPct - c.expectedPct > 10).length;
-  const slow        = campaigns.filter(c => c.expectedPct - c.actualPct > 15).length;
-  const willExceed  = campaigns.filter(c => c.willExceedBudget).length;
-
-  return (
-    <Card className="border border-slate-200 bg-white shadow-sm rounded-xl flex-1">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className={cn("h-3 w-3 rounded-full shrink-0", color)} />
-            <CardTitle className="text-base font-semibold text-slate-800">{company}</CardTitle>
-            <span className="text-[10px] text-slate-400">({campaigns.length})</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {overPace > 0 && (
-              <div className="flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5">
-                <AlertCircle className="h-3 w-3 text-red-500" />
-                <span className="text-[10px] font-medium text-red-600">{t("google.budgetPacing.overCount", { n: overPace })}</span>
-              </div>
-            )}
-            {slow > 0 && (
-              <div className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5">
-                <AlertCircle className="h-3 w-3 text-amber-500" />
-                <span className="text-[10px] font-medium text-amber-600">{t("google.budgetPacing.slowCount", { n: slow })}</span>
-              </div>
-            )}
-            {willExceed > 0 && (
-              <div className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5">
-                <AlertTriangle className="h-3 w-3 text-red-600" />
-                <span className="text-[10px] font-semibold text-red-700">{t("google.budgetPacing.willExceedCount", { n: willExceed })}</span>
-              </div>
-            )}
-          </div>
-        </div>
-        <CardDescription className="text-xs text-slate-500">
-          {t("google.budgetPacing.total")} {formatVND(totalSpent)} / {formatVND(totalBudget)}{" "}
-          ({totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0}%)
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pt-0">
-        {campaigns.some(c => !c.forecastAllowed) && (
-          <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>{t("google.budgetPacing.forecastUnavailable")}</span>
-          </div>
-        )}
-        {campaigns.map(c => <CampaignRow key={c.id} c={c} />)}
-      </CardContent>
-    </Card>
-  );
+  const money = (value: number) => new Intl.NumberFormat(locale, { style: "currency", currency: data.currency, maximumFractionDigits: 6 }).format(value);
+  return <Card className="flex-1 rounded-xl border border-slate-200 bg-white shadow-sm min-w-0">
+    <CardHeader>
+      <div className="flex items-center gap-2"><span className={cn("h-3 w-3 rounded-full", color)} /><CardTitle>{data.company}</CardTitle></div>
+      <CardDescription>{data.accountId} · {data.currency} · {data.timeZone}</CardDescription>
+      <p className="text-xs text-slate-500">{t("google.budgetPacing.p6.actual")} {data.sourceRanges.actual.from} – {data.sourceRanges.actual.to} · {t("google.budgetPacing.p6.partialToday")}</p>
+      <p className="text-xs text-slate-500">{t("google.budgetPacing.p6.runrate")} {data.sourceRanges.runrate.from} – {data.sourceRanges.runrate.to}</p>
+      <p className="text-xs text-slate-500">Google Ads · {data.readAt}</p>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <p className="text-xs text-slate-500">{t("google.budgetPacing.p6.disclaimer")}</p>
+      {data.budgets.length === 0 && <p>{t("google.budgetPacing.noCampaigns")}</p>}
+      {data.budgets.map(b => <section key={b.id} className="space-y-2 border-b border-slate-100 pb-4 last:border-0" aria-label={b.name}>
+        <h2 className="text-sm font-semibold text-slate-800">{b.name} · {t(b.scope === "shared_budget" ? "google.budgetPacing.p6.shared" : "google.budgetPacing.p6.single")}</h2>
+        <p className="break-all text-xs text-slate-500">{b.id}</p>
+        <ul className="text-xs text-slate-600">{b.members.map(m => <li key={m.id}>{m.name} ({m.id} · {m.status})</li>)}</ul>
+        <dl className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+          <div><dt className="text-slate-500">{t("google.budgetPacing.p6.actual")}</dt><dd>{money(b.spent)}</dd></div>
+          <div><dt className="text-slate-500">{t("google.budgetPacing.p6.completed")}</dt><dd>{money(b.completedSpend)}</dd></div>
+          <div><dt className="text-slate-500">{t("google.budgetPacing.p6.daily")}</dt><dd>{money(b.dailyBudget)}</dd></div>
+          <div><dt className="text-slate-500">{t("google.budgetPacing.p6.reference")}</dt><dd>{money(b.monthlyReference)}</dd></div>
+          <div><dt className="text-slate-500">{t("google.budgetPacing.p6.forecast")}</dt><dd>{b.projectedSpend === null ? "—" : money(b.projectedSpend)}</dd></div>
+        </dl>
+        <p className={cn("text-xs", b.forecastAllowed ? "text-slate-500" : "text-amber-700")}>
+          {t(`google.budgetPacing.p6.${b.status}`)} · {t("google.budgetPacing.p6.sample", { n: b.forecastQuality.observedDays, min: b.forecastQuality.minDaysRequired })}
+        </p>
+      </section>)}
+    </CardContent>
+  </Card>;
 }
 
 export default function BudgetPacingPage() {
@@ -212,9 +103,12 @@ export default function BudgetPacingPage() {
     }
   }
 
-  useEffect(() => { if (!sessionLoading) fetchAll(); }, [sessionLoading, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (sessionLoading) return;
+    const timer = setTimeout(() => { void fetchAll(); }, 0);
+    return () => clearTimeout(timer);
+  }, [sessionLoading, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const meta = mbc ?? mbi;
 
   return (
     <div className="space-y-5">
@@ -227,8 +121,7 @@ export default function BudgetPacingPage() {
           <div>
             <h1 className="text-xl font-semibold text-slate-800">Budget Pacing</h1>
             <p className="text-sm text-slate-500">
-              {t("google.budgetPacing.subtitle")}
-              {meta && t("google.budgetPacing.subtitleDay", { day: meta.dayOfMonth, days: meta.daysInMonth, pct: meta.elapsedPct })}
+              {t("google.budgetPacing.p6.subtitle")}
             </p>
           </div>
         </div>
@@ -240,14 +133,6 @@ export default function BudgetPacingPage() {
           <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
           {t("google.budgetPacing.refresh")}
         </button>
-      </div>
-
-      {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-        <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-emerald-400 inline-block" />{t("google.budgetPacing.statusOnTrack")}</div>
-        <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-amber-400 inline-block" />{t("google.budgetPacing.legendSlow")}</div>
-        <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-red-400 inline-block" />{t("google.budgetPacing.legendOver")}</div>
-        <div className="flex items-center gap-1.5"><span className="h-0.5 w-3 bg-slate-400 inline-block" />{t("google.budgetPacing.legendExpected")}</div>
       </div>
 
       {loading ? (

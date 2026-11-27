@@ -1,5 +1,21 @@
 // Khu "google" (song ngữ GĐ2) — bản gốc tiếng Việt. Khoá dạng "google.tên". Giữ NGUYÊN câu tiếng Việt đang hiển thị.
 export const google = {
+  "google.budgetPacing.p6.actual": "Chi tiêu thực tế tháng này",
+  "google.budgetPacing.p6.partialToday": "Hôm nay chưa hoàn tất",
+  "google.budgetPacing.p6.runrate": "Khoảng ngày hoàn tất dùng cho tốc độ chi",
+  "google.budgetPacing.p6.disclaimer": "Mức tham chiếu = ngân sách ngày hiện tại × số ngày trong tháng; không phải trần thanh toán, số dư hay cam kết giới hạn của Google. Chi tiêu gom theo ngân sách hiện gắn với chiến dịch, gồm cả tạm dừng/đã xóa.",
+  "google.budgetPacing.p6.shared": "Ngân sách dùng chung",
+  "google.budgetPacing.p6.single": "Ngân sách chiến dịch",
+  "google.budgetPacing.p6.completed": "Thực tế đến hết hôm qua",
+  "google.budgetPacing.p6.daily": "Ngân sách ngày hiện tại",
+  "google.budgetPacing.p6.reference": "Tham chiếu tháng theo mức ngày hiện tại",
+  "google.budgetPacing.p6.forecast": "Dự báo cuối tháng (gồm hôm nay)",
+  "google.budgetPacing.p6.ready": "Dự báo từ ngày quan sát được; ngày thiếu không tính là 0",
+  "google.budgetPacing.p6.partial_coverage": "Chưa dự báo: chưa xác minh được lịch sử phân bổ của ngân sách dùng chung",
+  "google.budgetPacing.p6.insufficient_days": "Chưa đủ ngày quan sát để dự báo",
+  "google.budgetPacing.p6.sample": "{n}/{min} ngày quan sát tối thiểu",
+  "google.budgetPacing.p6.subtitle": "Chi tiêu thực tế và dự báo theo từng ngân sách, dùng tiền tệ và múi giờ tài khoản.",
+
 
 // app/(dashboard)/google-search/page.tsx
   "google.searchPage.tab.xray": "🩻 X-quang & việc nên làm",
