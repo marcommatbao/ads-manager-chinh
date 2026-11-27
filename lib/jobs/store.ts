@@ -6,6 +6,8 @@
 // ============================================================
 
 import fs from "fs";
+import { RUNNING_JOBS } from "./execution-state";
+import { CHECKPOINT_MAX_DURATION_MS } from "./checkpoint-visibility";
 import path from "path";
 import { withFileLock } from "@/lib/file-lock";
 import { writeFileAtomic } from "@/lib/fs-atomic";
@@ -30,12 +32,11 @@ const MAX_HISTORY_PER_JOB = 50;
 // ── Control file ──────────────────────────────────────────
 
 function readControlFile(): JobControlFile {
-  try {
-    if (fs.existsSync(CONTROL_FILE)) {
-      return JSON.parse(fs.readFileSync(CONTROL_FILE, "utf8")) as JobControlFile;
-    }
-  } catch { /* ignore */ }
-  return { updatedAt: new Date().toISOString(), controls: {} };
+  if (!fs.existsSync(CONTROL_FILE)) return { updatedAt: new Date().toISOString(), controls: {} };
+  const file = JSON.parse(fs.readFileSync(CONTROL_FILE, "utf8")) as JobControlFile;
+  if (!file || !file.controls || typeof file.controls !== "object" || Array.isArray(file.controls)
+    || Object.values(file.controls).some(c => !c || typeof c.enabled !== "boolean")) throw new Error("job_control_invalid");
+  return file;
 }
 
 /** Job TẮT bằng cấu hình (JOBS_DISABLED="kpi_report,alerts_digest") — user 29/09 không cần 2 báo cáo Telegram. Tính như tạm
@@ -89,12 +90,14 @@ export async function saveJobControl(record: JobControlRecord): Promise<void> {
 // ── History file ──────────────────────────────────────────
 
 function readHistoryFile(): JobHistoryFile {
-  try {
-    if (fs.existsSync(HISTORY_FILE)) {
-      return JSON.parse(fs.readFileSync(HISTORY_FILE, "utf8")) as JobHistoryFile;
-    }
-  } catch { /* ignore */ }
-  return { updatedAt: new Date().toISOString(), history: {} };
+  if (!fs.existsSync(HISTORY_FILE)) return { updatedAt: new Date().toISOString(), history: {} };
+  // Corrupt history must never be interpreted as an empty successful store.
+  const file = JSON.parse(fs.readFileSync(HISTORY_FILE, "utf8")) as JobHistoryFile;
+  if (!file || typeof file.history !== "object" || !file.history || Array.isArray(file.history)
+    || Object.values(file.history).some(records => !Array.isArray(records) || records.some(r => !r || typeof r.runId !== "string" || typeof r.status !== "string"))) {
+    throw new Error("job_history_invalid");
+  }
+  return file;
 }
 
 export function getJobHistory(id: JobId, limit = 10): JobRunRecord[] {
@@ -131,11 +134,40 @@ export async function updateJobRun(
     const history = file.history[jobId] ?? [];
     const idx = history.findLastIndex(r => r.runId === runId);
     if (idx !== -1) {
+      // A late worker completion cannot erase an admin acknowledgement.
+      if (history[idx].recovery) return;
       history[idx] = { ...history[idx], ...patch };
       file.history[jobId] = history;
       file.updatedAt = new Date().toISOString();
       fs.mkdirSync(path.dirname(HISTORY_FILE), { recursive: true });
       await writeFileAtomic(HISTORY_FILE, JSON.stringify(file, null, 2));
     }
+  });
+}
+
+/** History-only CAS; never clears RUNNING, claims, controls, or starts work.
+ * withFileLock serializes one process only, not a distributed lease.
+ */
+export async function acknowledgeExpiredCheckpoint(runId: string, expectedStartedAt: string, actor: string): Promise<boolean> {
+  return withFileLock(HISTORY_FILE, async () => {
+    if (RUNNING_JOBS.has("quality_checkpoint")) return false;
+    const file = readHistoryFile();
+    const history = file.history.quality_checkpoint ?? [];
+    const matches = history.filter(r => r.runId === runId);
+    if (matches.length !== 1) return false;
+    const run = matches[0];
+    const start = Date.parse(run.startedAt);
+    const now = Date.now();
+    if (run.jobId !== "quality_checkpoint" || run.status !== "running" || run.recovery
+      || run.startedAt !== expectedStartedAt || run.finishedAt !== null || run.durationMs !== null
+      || !Number.isFinite(start) || new Date(start).toISOString() !== run.startedAt
+      || start > now || now - start <= CHECKPOINT_MAX_DURATION_MS) return false;
+    // Preserve the original evidence; this timestamp is acknowledgement, NOT completion.
+    const original = { ...run };
+    run.status = "abandoned";
+    run.recovery = { acknowledgedAt: new Date(now).toISOString(), acknowledgedBy: actor, original };
+    file.updatedAt = new Date(now).toISOString();
+    await writeFileAtomic(HISTORY_FILE, JSON.stringify(file, null, 2));
+    return true;
   });
 }

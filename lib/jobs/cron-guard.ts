@@ -23,7 +23,7 @@ import type { JobId, JobRunStatus } from "./types";
 import { envSatisfied } from "@/lib/connect/env-satisfied";
 
 // In-process overlap guard (shared across all route invocations)
-const RUNNING: Set<JobId> = new Set();
+import { RUNNING_JOBS as RUNNING } from "./execution-state";
 
 export interface JobRunHandle {
   blocked: false;

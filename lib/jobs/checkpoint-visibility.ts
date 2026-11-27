@@ -1,6 +1,6 @@
 /** Client-only projection of stored job evidence; never reads stores or runs jobs. */
 export interface CheckpointRun {
-  status: "success" | "failure" | "skipped" | "running" | "preflight_failed"
+  status: "abandoned" | "success" | "failure" | "skipped" | "running" | "preflight_failed"
   startedAt: string
   finishedAt: string | null
   resultSummary: string | null

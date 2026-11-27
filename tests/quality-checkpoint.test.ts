@@ -119,3 +119,19 @@ it("a stored record without trusted read time stays inconclusive and null", asyn
   expect(observation.ref.readAt).toBeNull()
   expect(observation.reason).toBe("stale_or_unavailable")
 })
+
+it("expired history acknowledgement survives restart; later stored-only sweeps retain dedup", async () => {
+  await seed()
+  const startedAt = new Date(Date.now() - 120000).toISOString()
+  await store.appendJobRun({ jobId: "quality_checkpoint", runId: "crashed", status: "running", startedAt, finishedAt: null, durationMs: null, resultSummary: null, errorSummary: null, triggeredBy: "synthetic" })
+  // Simulate observation persisted before crash but no successful run finish.
+  await w.sweepQualityCheckpoints(["MBC"], { google_ads: record() }, due)
+  expect(await store.acknowledgeExpiredCheckpoint("crashed", startedAt, "synthetic")).toBe(true)
+  vi.resetModules()
+  store = await import("@/lib/jobs/store"); w = await import("@/lib/inbox/quality-workflow")
+  await w.sweepQualityCheckpoints(["MBC"], { google_ads: record() }, due)
+  expect(disk().actions[0].observations).toHaveLength(1)
+  expect(store.getJobHistory("quality_checkpoint")[0].status).toBe("abandoned")
+  expect(store.getJobControl("quality_checkpoint").enabled).toBe(false)
+  expect(mocks.snapshot).not.toHaveBeenCalled()
+})

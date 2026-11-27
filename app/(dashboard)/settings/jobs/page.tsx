@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckpointRecovery } from "@/components/jobs/checkpoint-recovery";
 import { CheckpointVisibility } from "@/components/jobs/checkpoint-visibility";
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, Play, Pause, RefreshCw, CheckCircle2, XCircle, AlertTriangle, Clock, SkipForward, AlertCircle, Search, FileSearch } from "lucide-react";
@@ -11,11 +12,12 @@ import type { TFunction } from "@/lib/i18n/translate";
 
 // ── Types ────────────────────────────────────────────────
 
-type JobRunStatus = "success" | "failure" | "skipped" | "running" | "preflight_failed";
+type JobRunStatus = "abandoned" | "success" | "failure" | "skipped" | "running" | "preflight_failed";
 type RiskLevel = "low" | "medium" | "high";
 type SchedulingStatus = "auto" | "manual_only";
 
 interface JobRunRecord {
+  recovery?: { acknowledgedAt: string; acknowledgedBy: string };
   runId: string; jobId: string; status: JobRunStatus;
   startedAt: string; finishedAt: string | null; durationMs: number | null;
   resultSummary: string | null; errorSummary: string | null; triggeredBy: string;
@@ -54,6 +56,7 @@ function absTime(iso: string | null, loc: string): string {
 }
 
 const RUN_STATUS: Record<JobRunStatus, { icon: React.ReactNode; cls: string }> = {
+  abandoned:       { icon: <AlertTriangle className="h-3.5 w-3.5" />, cls: "text-amber-600" },
   success:         { icon: <CheckCircle2 className="h-3.5 w-3.5" />, cls: "text-emerald-600" },
   failure:         { icon: <XCircle className="h-3.5 w-3.5" />,      cls: "text-red-600" },
   skipped:         { icon: <SkipForward className="h-3.5 w-3.5" />,  cls: "text-slate-400" },
@@ -471,6 +474,7 @@ function JobRow({
             </div>
           </div>
 
+          {state.jobId === "quality_checkpoint" && canControl && state.recentHistory.filter(r => r.status === "running").map(r => <CheckpointRecovery key={r.runId} run={r} />)}
           {/* Recent history */}
           {state.recentHistory.length > 0 && (
             <div className="space-y-1">
@@ -481,7 +485,7 @@ function JobRow({
                   <span className="text-slate-500 w-20 shrink-0">{relTime(r.startedAt, t)}</span>
                   {r.durationMs != null && <span className="text-slate-400 w-12 shrink-0">{(r.durationMs / 1000).toFixed(1)}s</span>}
                   <span className="text-slate-600 truncate">{state.jobId === "quality_checkpoint" ? t(`creative.checkpoint.status.${r.status}`) : r.resultSummary ?? r.errorSummary ?? r.status}</span>
-                  <span className="text-slate-400 ml-auto shrink-0 text-[10px]">{r.triggeredBy}</span>
+                  <span className="text-slate-400 ml-auto shrink-0 text-[10px]">{r.triggeredBy}{r.recovery && ` · ${r.recovery.acknowledgedBy} · ${r.recovery.acknowledgedAt}`}</span>
                 </div>
               ))}
             </div>

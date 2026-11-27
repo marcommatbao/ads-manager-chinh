@@ -49,6 +49,7 @@ export type JobId =
   | "query_smoke";          // /api/cron/query-smoke
 
 export type JobRunStatus =
+  | "abandoned"  // admin acknowledged expired observation; outcome unknown
   | "success"    // completed without error
   | "failure"    // threw or returned error
   | "skipped"    // paused or overlap guard fired
@@ -71,6 +72,7 @@ export type JobSchedulingStatus =
 // ── Per-run record ─────────────────────────────────────────
 
 export interface JobRunRecord {
+  recovery?: { acknowledgedAt: string; acknowledgedBy: string; original: Omit<JobRunRecord, "recovery"> };
   runId: string;         // uuid-style unique id per execution
   jobId: JobId;
   status: JobRunStatus;
