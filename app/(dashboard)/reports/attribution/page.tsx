@@ -1,4 +1,5 @@
 "use client"
+import { LeadOrderEvidence } from "@/components/reports/LeadOrderEvidence"
 import { useState, useEffect, useCallback } from "react"
 import { useAdsStore }         from "@/store/useAdsStore"
 import { companyIds } from "@/lib/companies/registry";
@@ -201,6 +202,8 @@ export default function AttributionPage() {
         </div>
         </div>
       </div>
+
+      <LeadOrderEvidence key={`${company}:${range}`} company={company} range={range} />
 
       {error && (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">

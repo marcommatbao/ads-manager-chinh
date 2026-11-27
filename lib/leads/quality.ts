@@ -9,6 +9,7 @@
 // Hành động chuyển đổi tool tạo là PHỤ (primary_for_goal = false) → chưa ảnh hưởng đặt giá cho tới khi người dùng tự đưa
 // vào mục tiêu trong Google Ads, khi đã thấy số đổ về đều.
 
+import { readLeadTruth, type LeadTruth } from "@/lib/leads/source-truth"
 import crypto from "crypto"
 import fs from "fs"
 import path from "path"
@@ -115,7 +116,11 @@ export function toLeadEvent(x: LeadEventInput, source: LeadEvent["source"], now 
 }
 
 function readEvents(co: Company): LeadEvent[] { try { return JSON.parse(fs.readFileSync(eventsFile(co), "utf-8")) as LeadEvent[] } catch { return [] } }
-export function readLeadEvents(co: Company): LeadEvent[] { return readEvents(co) }
+export function readLeadEvents(co: Company): LeadEvent[]
+export function readLeadEvents(co: Company, options: { strict: true; since: Date; until: Date }): LeadTruth
+export function readLeadEvents(co: Company, options?: { strict: true; since: Date; until: Date }): LeadEvent[] | LeadTruth {
+  return options ? readLeadTruth(co, eventsFile(co), options.since, options.until, KEEP_EVENTS) : readEvents(co)
+}
 
 
 /** Nhận lô sự kiện; trùng (cùng lead + giai đoạn) thì bỏ qua — Google cũng chống trùng theo order_id. */

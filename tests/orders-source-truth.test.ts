@@ -8,7 +8,7 @@ vi.mock("@/lib/conversions/real-orders", () => ({
 }));
 vi.mock("@/lib/auth", () => ({ getCurrentUser }));
 vi.mock("@/lib/permissions", () => ({ getCompaniesForRole }));
-vi.mock("@/lib/leads/quality", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/leads/quality")>(), readLeadEvents: () => [] }));
+vi.mock("@/lib/leads/quality", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/leads/quality")>(), readLeadEvents: () => ({ status: "available", events: [] }) }));
 import { GET } from "@/app/api/attribution/report/route";
 import { NextRequest } from "next/server";
 import { readOrders, readOrdersTruth } from "@/lib/orders/sources";
